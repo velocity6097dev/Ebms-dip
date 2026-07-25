@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Water Dip &amp; Appearance Register</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%230B3556%22/><rect x=%2211%22 y=%223%22 width=%222%22 height=%2218%22 fill=%22%23C97A21%22/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="36" height="36" rx="8" fill="#0B3556"/>
+        <rect x="18.5" y="7" width="3" height="26" rx="1.5" fill="#F5F6F4"/>
+        <rect x="18.5" y="7" width="3" height="6" rx="1.5" fill="#C97A21"/>
+        <rect x="13" y="12" width="4" height="1.6" rx="0.8" fill="#F5F6F4"/>
+        <rect x="13" y="17" width="4" height="1.6" rx="0.8" fill="#F5F6F4"/>
+        <rect x="13" y="22" width="4" height="1.6" rx="0.8" fill="#F5F6F4"/>
+        <rect x="13" y="27" width="4" height="1.6" rx="0.8" fill="#F5F6F4"/>
+      </svg>
+      <div>
+        <h1>Water Dip Register</h1>
+        <p class="brand-sub">Daily &amp; hourly monitoring log</p>
+      </div>
+    </div>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-mode="signin">Owner sign in</button>
+      <button type="button" class="auth-tab" data-mode="signup">Register outlet</button>
+    </div>
+
+    <form id="authForm">
+      <label class="field signup-only hidden">
+        <span>Your name</span>
+        <input type="text" id="authOwnerName" autocomplete="name" placeholder="e.g. Jasimuddin Ahmed" />
+      </label>
+      <label class="field signup-only hidden">
+        <span>Retail outlet name</span>
+        <input type="text" id="authOutletName" autocomplete="organization" placeholder="e.g. Jasimuddin Ahmed Service Station" />
+      </label>
+      <label class="field">
+        <span>Email</span>
+        <input type="email" id="authEmail" autocomplete="email" required />
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" id="authPassword" autocomplete="current-password" required minlength="6" />
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" id="authSubmit">Sign in</button>
+    </form>
+    <p class="auth-msg" id="authMsg"></p>
+    <p class="auth-note">Only the outlet owner registers an account. Staff never need their own login — they just pick their name and sign when checking a reading.</p>
+  </div>
+</div>
+
+<!-- ============ ONBOARDING: TANK SETUP ============ -->
+<div id="onboardScreen" class="auth-screen hidden">
+  <div class="auth-card onboard-card">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="36" height="36" rx="8" fill="#0B3556"/>
+        <rect x="18.5" y="7" width="3" height="26" rx="1.5" fill="#F5F6F4"/>
+        <rect x="18.5" y="7" width="3" height="6" rx="1.5" fill="#C97A21"/>
+      </svg>
+      <div>
+        <h1>Set up your tanks</h1>
+        <p class="brand-sub">Tell us what tanks this outlet has — you can edit this anytime later in Settings.</p>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>How many tanks does this outlet have?</span>
+      <input type="number" id="tankCount" min="1" max="12" value="2" />
+    </label>
+    <button type="button" class="btn btn-ghost btn-block" id="generateTankRows">Set up tanks</button>
+
+    <div id="onboardTankRows" class="onboard-tank-rows"></div>
+
+    <button type="button" class="btn btn-primary btn-block" id="finishOnboardingBtn">Save tanks &amp; continue</button>
+    <p class="auth-msg" id="onboardMsg"></p>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="appScreen" class="app-screen hidden">
+
+  <header class="topbar">
+    <div class="brand brand--compact">
+      <svg class="brand-mark brand-mark--sm" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="36" height="36" rx="8" fill="#0B3556"/>
+        <rect x="18.5" y="7" width="3" height="26" rx="1.5" fill="#F5F6F4"/>
+        <rect x="18.5" y="7" width="3" height="6" rx="1.5" fill="#C97A21"/>
+      </svg>
+      <div>
+        <strong id="topbarOutlet">Water Dip Register</strong>
+        <span class="topbar-sub" id="topbarMonthYear">&nbsp;</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost" id="settingsToggleBtn">Settings</button>
+      <button class="btn btn-ghost" id="logoutBtn">Log out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ---------- Settings (collapsible) ---------- -->
+    <section class="card settings-card hidden" id="settingsCard">
+
+      <div class="settings-block">
+        <h2 class="card-title">Outlet details</h2>
+        <div class="settings-grid">
+          <label class="field">
+            <span>Owner name</span>
+            <input type="text" id="outletOwnerName" placeholder="e.g. Jasimuddin Ahmed" />
+          </label>
+          <label class="field">
+            <span>Retail outlet name</span>
+            <input type="text" id="outletName" placeholder="e.g. Jasimuddin Ahmed Service Station" />
+          </label>
+          <label class="field">
+            <span>Month</span>
+            <select id="outletMonth">
+              <option value="">Select month</option>
+              <option>January</option><option>February</option><option>March</option>
+              <option>April</option><option>May</option><option>June</option>
+              <option>July</option><option>August</option><option>September</option>
+              <option>October</option><option>November</option><option>December</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Year</span>
+            <input type="number" id="outletYear" placeholder="2026" min="2000" max="2100" />
+          </label>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-primary" id="saveSettingsBtn">Save outlet details</button>
+          <span class="save-status" id="settingsStatus"></span>
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <div class="settings-block-header">
+          <h2 class="card-title">Tanks</h2>
+          <p class="panel-sub">Every tank listed here appears automatically on both registers.</p>
+        </div>
+        <div id="tankManageList" class="manage-list"></div>
+        <div class="add-inline-row">
+          <input type="text" id="newTankName" placeholder="Tank name, e.g. Petrol" />
+          <input type="number" id="newTankCapacity" placeholder="Capacity in litres (optional)" />
+          <button class="btn btn-secondary" id="addTankBtn">+ Add tank</button>
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <div class="settings-block-header">
+          <h2 class="card-title">Outlet members</h2>
+          <p class="panel-sub">Add every staff member who checks readings. They'll just pick their name and sign — no typing needed.</p>
+        </div>
+        <div id="memberManageList" class="manage-list"></div>
+        <div class="add-inline-row">
+          <input type="text" id="newMemberName" placeholder="Staff member's name" />
+          <button class="btn btn-secondary" id="addMemberBtn">+ Add member</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Tabs ---------- -->
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="monsoon">Monthly register (monsoon)</button>
+      <button class="tab-btn" data-tab="rainy">Hourly register (rainy days)</button>
+    </nav>
+
+    <!-- Print-only heading, populated from settings just before printing -->
+    <div class="print-header hidden-screen" id="printHeader">
+      <h1 id="printOutletName">&nbsp;</h1>
+      <p id="printSubtitle">&nbsp;</p>
+    </div>
+
+    <!-- ---------- Monsoon monthly panel ---------- -->
+    <section class="card panel" id="monsoonPanel">
+      <div class="panel-header">
+        <div>
+          <h2 class="card-title">Daily water dip &amp; appearance — monthly</h2>
+          <p class="panel-sub">One entry each day. Use throughout monsoon season regardless of rainfall.</p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn btn-secondary" id="addMonsoonRow">+ Add day</button>
+          <button class="btn btn-primary" id="saveMonsoonBtn">Save all</button>
+          <button class="btn btn-ghost" id="printMonsoonBtn">Print</button>
+        </div>
+      </div>
+      <div class="entry-list" id="monsoonBody"><!-- cards injected by app.js --></div>
+    </section>
+
+    <!-- ---------- Rainy day hourly panel ---------- -->
+    <section class="card panel hidden" id="rainyPanel">
+      <div class="panel-header">
+        <div>
+          <h2 class="card-title">Hourly water dip &amp; appearance — rainy days</h2>
+          <p class="panel-sub">Record an hourly reading, tank-wise, on every day it is raining.</p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn btn-secondary" id="addRainyRow">+ Add reading</button>
+          <button class="btn btn-primary" id="saveRainyBtn">Save all</button>
+          <button class="btn btn-ghost" id="printRainyBtn">Print</button>
+        </div>
+      </div>
+      <div class="entry-list" id="rainyBody"><!-- cards injected by app.js --></div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ SIGNATURE MODAL ============ -->
+<div id="signatureModal" class="modal hidden">
+  <div class="modal-card">
+    <h3>Checked by</h3>
+    <label class="field">
+      <span>Who's signing?</span>
+      <select id="signerSelect"></select>
+    </label>
+    <div class="sig-wrap">
+      <canvas id="signatureCanvas"></canvas>
+    </div>
+    <div class="sig-hint">Sign above with your mouse, stylus, or finger.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="clearSigBtn">Clear</button>
+      <button class="btn btn-ghost" id="cancelSigBtn">Cancel</button>
+      <button class="btn btn-primary" id="saveSigBtn">Save signature</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
