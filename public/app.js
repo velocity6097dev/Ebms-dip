@@ -15,16 +15,23 @@
       'Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY to your .env file and restart the server.';
   }
 
-  const APPEARANCE_OPTIONS = ['Clear', 'Hazy', 'Water Layer at bottom'];
+  const APPEARANCE_OPTIONS = [
+    { value: 'Clear', label: 'Clear', color: '#2F7D5A' },
+    { value: 'Hazy', label: 'Hazy', color: '#C97A21' },
+    { value: 'Water Layer at bottom', label: 'Water layer at bottom', color: '#B23A34' },
+  ];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const TANK_NAME_DEFAULTS = ['Petrol', 'Speed', 'Diesel'];
 
   // ---------------------------------------------------------------
   // DOM references
   // ---------------------------------------------------------------
   const authScreen = document.getElementById('authScreen');
+  const recoveryScreen = document.getElementById('recoveryScreen');
   const onboardScreen = document.getElementById('onboardScreen');
   const appScreen = document.getElementById('appScreen');
 
+  const authTabsWrap = document.getElementById('authTabsWrap');
   const authTabs = document.querySelectorAll('.auth-tab');
   const authForm = document.getElementById('authForm');
   const authOwnerName = document.getElementById('authOwnerName');
@@ -33,7 +40,20 @@
   const authPassword = document.getElementById('authPassword');
   const authSubmit = document.getElementById('authSubmit');
   const authMsg = document.getElementById('authMsg');
+  const authNote = document.querySelector('.auth-note');
   const signupOnlyFields = document.querySelectorAll('.signup-only');
+  const signinOnlyEls = document.querySelectorAll('.signin-only');
+
+  const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+  const resetRequestBlock = document.getElementById('resetRequestBlock');
+  const resetEmail = document.getElementById('resetEmail');
+  const sendResetBtn = document.getElementById('sendResetBtn');
+  const backToSigninLink = document.getElementById('backToSigninLink');
+
+  const recoveryPassword = document.getElementById('recoveryPassword');
+  const recoveryPasswordConfirm = document.getElementById('recoveryPasswordConfirm');
+  const recoverySaveBtn = document.getElementById('recoverySaveBtn');
+  const recoveryMsg = document.getElementById('recoveryMsg');
 
   const tankCountInput = document.getElementById('tankCount');
   const generateTankRowsBtn = document.getElementById('generateTankRows');
@@ -41,50 +61,63 @@
   const finishOnboardingBtn = document.getElementById('finishOnboardingBtn');
   const onboardMsg = document.getElementById('onboardMsg');
 
-  const logoutBtn = document.getElementById('logoutBtn');
-  const settingsToggleBtn = document.getElementById('settingsToggleBtn');
   const topbarOutlet = document.getElementById('topbarOutlet');
   const topbarMonthYear = document.getElementById('topbarMonthYear');
+  const roleBadge = document.getElementById('roleBadge');
 
-  const settingsCard = document.getElementById('settingsCard');
   const outletOwnerNameInput = document.getElementById('outletOwnerName');
   const outletNameInput = document.getElementById('outletName');
-  const outletMonthInput = document.getElementById('outletMonth');
+  const outletMonthBtn = document.getElementById('outletMonthBtn');
+  const outletMonthLabel = document.getElementById('outletMonthLabel');
   const outletYearInput = document.getElementById('outletYear');
   const saveSettingsBtn = document.getElementById('saveSettingsBtn');
   const settingsStatus = document.getElementById('settingsStatus');
+  const staffOutletInfo = document.getElementById('staffOutletInfo');
 
   const tankManageList = document.getElementById('tankManageList');
   const newTankName = document.getElementById('newTankName');
   const newTankCapacity = document.getElementById('newTankCapacity');
   const addTankBtn = document.getElementById('addTankBtn');
 
-  const memberManageList = document.getElementById('memberManageList');
-  const newMemberName = document.getElementById('newMemberName');
-  const addMemberBtn = document.getElementById('addMemberBtn');
+  const staffManageList = document.getElementById('staffManageList');
+  const newStaffName = document.getElementById('newStaffName');
+  const newStaffEmail = document.getElementById('newStaffEmail');
+  const newStaffPassword = document.getElementById('newStaffPassword');
+  const addStaffBtn = document.getElementById('addStaffBtn');
 
-  const tabBtns = document.querySelectorAll('.tab-btn');
+  const changePasswordBtn = document.getElementById('changePasswordBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const changePasswordModal = document.getElementById('changePasswordModal');
+  const newPasswordInput = document.getElementById('newPassword');
+  const newPasswordConfirmInput = document.getElementById('newPasswordConfirm');
+  const changePasswordMsg = document.getElementById('changePasswordMsg');
+  const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+  const savePasswordBtn = document.getElementById('savePasswordBtn');
+
+  const navBtns = document.querySelectorAll('.nav-btn');
   const monsoonPanel = document.getElementById('monsoonPanel');
   const rainyPanel = document.getElementById('rainyPanel');
-  const monsoonBody = document.getElementById('monsoonBody');
-  const rainyBody = document.getElementById('rainyBody');
+  const contamPanel = document.getElementById('contamPanel');
+  const settingsScreen = document.getElementById('settingsScreen');
 
-  const addMonsoonRowBtn = document.getElementById('addMonsoonRow');
-  const addRainyRowBtn = document.getElementById('addRainyRow');
-  const saveMonsoonBtn = document.getElementById('saveMonsoonBtn');
-  const saveRainyBtn = document.getElementById('saveRainyBtn');
+  const monsoonThead = document.getElementById('monsoonThead');
+  const monsoonBody = document.getElementById('monsoonBody');
+  const rainyThead = document.getElementById('rainyThead');
+  const rainyBody = document.getElementById('rainyBody');
+  const contamBody = document.getElementById('contamBody');
+
   const printMonsoonBtn = document.getElementById('printMonsoonBtn');
   const printRainyBtn = document.getElementById('printRainyBtn');
+  const printContamBtn = document.getElementById('printContamBtn');
+  const fabAddBtn = document.getElementById('fabAddBtn');
 
   const printOutletName = document.getElementById('printOutletName');
   const printSubtitle = document.getElementById('printSubtitle');
 
-  const signatureModal = document.getElementById('signatureModal');
-  const signerSelect = document.getElementById('signerSelect');
-  const signatureCanvas = document.getElementById('signatureCanvas');
-  const clearSigBtn = document.getElementById('clearSigBtn');
-  const cancelSigBtn = document.getElementById('cancelSigBtn');
-  const saveSigBtn = document.getElementById('saveSigBtn');
+  const entryModal = document.getElementById('entryModal');
+  const entryModalBody = document.getElementById('entryModalBody');
+  const entryModalActions = document.getElementById('entryModalActions');
 
   const toastEl = document.getElementById('toast');
 
@@ -92,21 +125,25 @@
   // State
   // ---------------------------------------------------------------
   let currentUser = null;
+  let role = null;              // 'owner' | 'staff'
+  let ownerId = null;            // the id all outlet data is scoped to
   let currentSettings = null;
-  let tanks = [];               // [{id,name,capacity_litres,sort_order}]
-  let members = [];             // [{id,member_name}]
-  let lastSelectedMemberId = null;
-  let signaturePad = null;
-  let signingRowId = null;
+  let currentStaffRow = null;
+  let displayName = '';
+  let tanks = [];
+  let staffList = [];
+  let activeTab = 'monsoon';
+  let outletMonthValue = '';
 
-  const monsoonCache = new Map(); // rowId -> full row object
-  const rainyCache = new Map();
+  let monsoonRows = [];
+  let rainyRows = [];
+  let contamRows = [];
 
-  const rowTableMap = {};      // rowId -> 'monsoon_entries' | 'rainy_entries'
-  const pendingUpdates = {};   // rowId -> { field: value, ... }
-  const pendingTimers = {};    // rowId -> timeout id
+  let entryModalKind = null;
+  let entryModalRowId = null;
+  let entryModalSignaturePad = null;
 
-  const genericPending = {};   // "table:id" -> { field: value }
+  const genericPending = {};
   const genericTimers = {};
 
   // ---------------------------------------------------------------
@@ -129,6 +166,23 @@
     return n || n === 0 ? Number(n).toLocaleString() + ' L' : '';
   }
 
+  function fmtTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function initials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return ((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || '');
+  }
+
+  function appearanceLabel(val) {
+    if (!val) return 'Select';
+    return val === 'Water Layer at bottom' ? 'Water layer at bottom' : val;
+  }
+
   let toastTimer = null;
   function showToast(msg, isError) {
     toastEl.textContent = msg;
@@ -138,18 +192,68 @@
     toastTimer = setTimeout(() => toastEl.classList.add('hidden'), 2600);
   }
 
-  function setRowStatus(rowId, status) {
-    const card = document.querySelector(`.entry-card[data-id="${rowId}"]`);
-    if (!card) return;
-    const dot = card.querySelector('[data-status]');
-    if (!dot) return;
-    const colors = { pending: '#C97A21', saved: '#2F7D5A', error: '#B23A34' };
-    dot.style.background = colors[status] || 'transparent';
-    dot.title = status === 'pending' ? 'Saving…' : status === 'saved' ? 'Saved' : status === 'error' ? 'Could not save' : '';
+  async function getAccessToken() {
+    const { data } = await supabase.auth.getSession();
+    return data.session ? data.session.access_token : null;
   }
 
   // ---------------------------------------------------------------
-  // Generic debounced field save (tanks, members)
+  // Password show/hide toggles (generic, works for every pw field)
+  // ---------------------------------------------------------------
+  document.querySelectorAll('.pw-toggle').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.toggleFor);
+      if (!input) return;
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.innerHTML = showing ? '<svg><use href="#icon-eye"/></svg>' : '<svg><use href="#icon-eye-off"/></svg>';
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // Bottom sheet (custom picker — replaces every native <select>)
+  // ---------------------------------------------------------------
+  function openActionSheet(opts) {
+    const overlay = document.createElement('div');
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet-card">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">${esc(opts.title)}</div>
+        <div class="sheet-options">
+          ${opts.options
+            .map(
+              (o) => `<button type="button" class="sheet-option ${o.value === opts.selectedValue ? 'selected' : ''}" data-value="${esc(o.value)}">
+              ${o.color ? `<span class="dot" style="background:${o.color}"></span>` : ''}
+              <span class="opt-label">${esc(o.label)}</span>
+              ${o.value === opts.selectedValue ? '<svg class="check"><use href="#icon-check"/></svg>' : ''}
+            </button>`
+            )
+            .join('')}
+        </div>
+        <button type="button" class="sheet-cancel">Cancel</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('open'));
+
+    function close() {
+      overlay.classList.remove('open');
+      setTimeout(() => overlay.remove(), 200);
+    }
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+    overlay.querySelector('.sheet-cancel').addEventListener('click', close);
+    overlay.querySelectorAll('.sheet-option').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        opts.onSelect(btn.dataset.value);
+        close();
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // Generic debounced field save (tanks, staff names)
   // ---------------------------------------------------------------
   function debouncedUpdate(table, id, field, value, delay) {
     const key = table + ':' + id;
@@ -162,50 +266,6 @@
       const { error } = await supabase.from(table).update(updates).eq('id', id);
       if (error) showToast('Could not save: ' + error.message, true);
     }, delay || 700);
-  }
-
-  // ---------------------------------------------------------------
-  // Entry-row autosave (monsoon / rainy)
-  // ---------------------------------------------------------------
-  function scheduleSave(rowId, field, value) {
-    pendingUpdates[rowId] = pendingUpdates[rowId] || {};
-    pendingUpdates[rowId][field] = value;
-    setRowStatus(rowId, 'pending');
-    clearTimeout(pendingTimers[rowId]);
-    pendingTimers[rowId] = setTimeout(() => flushRow(rowId), 800);
-  }
-
-  async function flushRow(rowId) {
-    clearTimeout(pendingTimers[rowId]);
-    const updates = pendingUpdates[rowId];
-    const table = rowTableMap[rowId];
-    if (!updates || !table) return;
-    delete pendingUpdates[rowId];
-    const { error } = await supabase.from(table).update(updates).eq('id', rowId);
-    if (error) {
-      setRowStatus(rowId, 'error');
-      showToast('Could not save row: ' + error.message, true);
-    } else {
-      setRowStatus(rowId, 'saved');
-    }
-  }
-
-  async function flushAll(tableName) {
-    const ids = Object.keys(pendingUpdates).filter((id) => rowTableMap[id] === tableName);
-    await Promise.all(ids.map((id) => flushRow(id)));
-    showToast('All changes saved');
-  }
-
-  function updateReading(rowId, tankId, slot, kind, value) {
-    const table = rowTableMap[rowId];
-    const cache = table === 'monsoon_entries' ? monsoonCache : rainyCache;
-    const row = cache.get(rowId);
-    if (!row) return;
-    row.readings = row.readings || {};
-    row.readings[tankId] = row.readings[tankId] || {};
-    const key = slot === 'single' ? kind : slot + '_' + kind;
-    row.readings[tankId][key] = value;
-    scheduleSave(rowId, 'readings', row.readings);
   }
 
   // ---------------------------------------------------------------
@@ -223,6 +283,7 @@
         const input = el.querySelector('input');
         if (input) input.required = isSignup;
       });
+      signinOnlyEls.forEach((el) => el.classList.toggle('hidden', isSignup));
       authSubmit.textContent = isSignup ? 'Register outlet' : 'Sign in';
       authMsg.textContent = '';
       authMsg.classList.remove('success');
@@ -256,7 +317,6 @@
           authMsg.classList.add('success');
           document.querySelector('.auth-tab[data-mode="signin"]').click();
         }
-        // If a session came back immediately, onAuthStateChange handles the rest.
       }
     } catch (err) {
       authMsg.textContent = err.message || 'Something went wrong.';
@@ -265,44 +325,126 @@
     }
   });
 
+  // ---------------------------------------------------------------
+  // Forgot password / recovery / change password
+  // ---------------------------------------------------------------
+  forgotPasswordLink.addEventListener('click', () => {
+    authTabsWrap.classList.add('hidden');
+    authForm.classList.add('hidden');
+    authNote.classList.add('hidden');
+    resetRequestBlock.classList.remove('hidden');
+    resetEmail.value = authEmail.value;
+    authMsg.textContent = '';
+  });
+
+  backToSigninLink.addEventListener('click', () => {
+    resetRequestBlock.classList.add('hidden');
+    authTabsWrap.classList.remove('hidden');
+    authForm.classList.remove('hidden');
+    authNote.classList.remove('hidden');
+    authMsg.textContent = '';
+  });
+
+  sendResetBtn.addEventListener('click', async () => {
+    if (!supabase) return;
+    const email = resetEmail.value.trim();
+    if (!email) {
+      authMsg.textContent = 'Enter your email first.';
+      authMsg.classList.remove('success');
+      return;
+    }
+    sendResetBtn.disabled = true;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    sendResetBtn.disabled = false;
+    if (error) {
+      authMsg.textContent = error.message;
+      authMsg.classList.remove('success');
+    } else {
+      authMsg.textContent = 'Check your email for a password reset link.';
+      authMsg.classList.add('success');
+    }
+  });
+
+  recoverySaveBtn.addEventListener('click', async () => {
+    if (!supabase) return;
+    const p1 = recoveryPassword.value;
+    const p2 = recoveryPasswordConfirm.value;
+    if (p1.length < 6) {
+      recoveryMsg.textContent = 'Password must be at least 6 characters.';
+      return;
+    }
+    if (p1 !== p2) {
+      recoveryMsg.textContent = 'Passwords do not match.';
+      return;
+    }
+    recoverySaveBtn.disabled = true;
+    const { error } = await supabase.auth.updateUser({ password: p1 });
+    recoverySaveBtn.disabled = false;
+    if (error) {
+      recoveryMsg.textContent = error.message;
+      return;
+    }
+    recoveryMsg.textContent = 'Password updated. Taking you in…';
+    recoveryMsg.classList.add('success');
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      recoveryScreen.classList.add('hidden');
+      onLogin(data.session);
+    }
+  });
+
+  changePasswordBtn.addEventListener('click', () => {
+    newPasswordInput.value = '';
+    newPasswordConfirmInput.value = '';
+    changePasswordMsg.textContent = '';
+    changePasswordModal.classList.remove('hidden');
+  });
+  cancelPasswordBtn.addEventListener('click', () => changePasswordModal.classList.add('hidden'));
+
+  savePasswordBtn.addEventListener('click', async () => {
+    const p1 = newPasswordInput.value;
+    const p2 = newPasswordConfirmInput.value;
+    if (p1.length < 6) {
+      changePasswordMsg.textContent = 'Password must be at least 6 characters.';
+      return;
+    }
+    if (p1 !== p2) {
+      changePasswordMsg.textContent = 'Passwords do not match.';
+      return;
+    }
+    savePasswordBtn.disabled = true;
+    const { error } = await supabase.auth.updateUser({ password: p1 });
+    savePasswordBtn.disabled = false;
+    if (error) {
+      changePasswordMsg.textContent = error.message;
+      return;
+    }
+    changePasswordModal.classList.add('hidden');
+    showToast('Password updated');
+  });
+
   logoutBtn.addEventListener('click', async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
   });
 
   // ---------------------------------------------------------------
-  // Login / logout transitions
+  // Login / logout — figures out whether this login is the owner
+  // or a staff sub-user, and scopes all data to the right owner id
   // ---------------------------------------------------------------
-  async function ensureSettingsRow() {
-    let { data, error } = await supabase
-      .from('outlet_settings')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .maybeSingle();
-
+  async function createInitialOwnerSettings() {
+    const meta = currentUser.user_metadata || {};
+    const payload = {
+      user_id: currentUser.id,
+      owner_name: meta.owner_name || '',
+      outlet_name: meta.outlet_name || '',
+      year: String(new Date().getFullYear()),
+      onboarded: false,
+    };
+    const { data, error } = await supabase.from('outlet_settings').insert(payload).select().single();
     if (error) {
-      showToast('Could not load outlet details: ' + error.message, true);
+      showToast('Could not set up your outlet: ' + error.message, true);
       return null;
-    }
-    if (!data) {
-      const meta = currentUser.user_metadata || {};
-      const payload = {
-        user_id: currentUser.id,
-        owner_name: meta.owner_name || '',
-        outlet_name: meta.outlet_name || '',
-        year: String(new Date().getFullYear()),
-        onboarded: false,
-      };
-      const { data: created, error: insErr } = await supabase
-        .from('outlet_settings')
-        .insert(payload)
-        .select()
-        .single();
-      if (insErr) {
-        showToast('Could not set up your outlet: ' + insErr.message, true);
-        return null;
-      }
-      data = created;
     }
     return data;
   }
@@ -311,7 +453,7 @@
     const { data, error } = await supabase
       .from('tanks')
       .select('*')
-      .eq('user_id', currentUser.id)
+      .eq('user_id', ownerId)
       .order('sort_order', { ascending: true });
     if (error) {
       showToast('Could not load tanks: ' + error.message, true);
@@ -320,31 +462,61 @@
     tanks = data || [];
   }
 
-  async function loadMembers() {
-    const { data, error } = await supabase
-      .from('outlet_members')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .order('sort_order', { ascending: true });
-    if (error) {
-      showToast('Could not load outlet members: ' + error.message, true);
-      return;
-    }
-    members = data || [];
-  }
-
   async function onLogin(session) {
     currentUser = session.user;
     authScreen.classList.add('hidden');
+    recoveryScreen.classList.add('hidden');
     onboardScreen.classList.add('hidden');
     appScreen.classList.add('hidden');
 
-    const settings = await ensureSettingsRow();
-    if (!settings) return;
-    currentSettings = settings;
+    const { data: ownerRow, error: ownerErr } = await supabase
+      .from('outlet_settings')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if (ownerErr) {
+      showToast('Could not load your account: ' + ownerErr.message, true);
+      return;
+    }
+
+    if (ownerRow) {
+      role = 'owner';
+      ownerId = currentUser.id;
+      currentSettings = ownerRow;
+      displayName = ownerRow.owner_name || currentUser.email;
+    } else {
+      const { data: staffRow, error: staffErr } = await supabase
+        .from('outlet_staff')
+        .select('*')
+        .eq('staff_user_id', currentUser.id)
+        .maybeSingle();
+      if (staffErr) {
+        showToast('Could not load your account: ' + staffErr.message, true);
+        return;
+      }
+      if (staffRow) {
+        role = 'staff';
+        ownerId = staffRow.owner_user_id;
+        currentStaffRow = staffRow;
+        displayName = staffRow.staff_name || currentUser.email;
+        const { data: settingsForStaff } = await supabase
+          .from('outlet_settings')
+          .select('*')
+          .eq('user_id', ownerId)
+          .maybeSingle();
+        currentSettings = settingsForStaff || {};
+      } else {
+        role = 'owner';
+        ownerId = currentUser.id;
+        currentSettings = await createInitialOwnerSettings();
+        if (!currentSettings) return;
+        displayName = currentSettings.owner_name || currentUser.email;
+      }
+    }
+
     await loadTanks();
 
-    if (!settings.onboarded || tanks.length === 0) {
+    if (role === 'owner' && (!currentSettings.onboarded || tanks.length === 0)) {
       showOnboarding();
       return;
     }
@@ -353,21 +525,29 @@
 
   function onLogout() {
     currentUser = null;
+    role = null;
+    ownerId = null;
     currentSettings = null;
+    currentStaffRow = null;
+    displayName = '';
     tanks = [];
-    members = [];
-    monsoonCache.clear();
-    rainyCache.clear();
-    monsoonBody.innerHTML = '';
-    rainyBody.innerHTML = '';
+    staffList = [];
+    monsoonRows = [];
+    rainyRows = [];
+    contamRows = [];
     appScreen.classList.add('hidden');
     onboardScreen.classList.add('hidden');
+    recoveryScreen.classList.add('hidden');
     authScreen.classList.remove('hidden');
     authForm.reset();
+    resetRequestBlock.classList.add('hidden');
+    authTabsWrap.classList.remove('hidden');
+    authForm.classList.remove('hidden');
+    authNote.classList.remove('hidden');
   }
 
   // ---------------------------------------------------------------
-  // Onboarding: tank setup wizard
+  // Onboarding: tank setup wizard (owner only)
   // ---------------------------------------------------------------
   function showOnboarding() {
     appScreen.classList.add('hidden');
@@ -383,7 +563,7 @@
       row.className = 'onboard-tank-row';
       row.innerHTML = `
         <input type="text" placeholder="Tank ${i + 1} name (e.g. ${TANK_NAME_DEFAULTS[i] || 'Diesel'})" data-onboard-name />
-        <input type="number" placeholder="Capacity in litres (optional)" data-onboard-capacity />
+        <input type="number" placeholder="Qty in litres (optional)" data-onboard-capacity />
       `;
       onboardTankRows.appendChild(row);
     }
@@ -402,7 +582,7 @@
       const capRaw = row.querySelector('[data-onboard-capacity]').value;
       if (!name) hasEmpty = true;
       payload.push({
-        user_id: currentUser.id,
+        user_id: ownerId,
         name: name || `Tank ${idx + 1}`,
         capacity_litres: capRaw ? Number(capRaw) : null,
         sort_order: idx,
@@ -423,7 +603,7 @@
     const { error: settingsErr } = await supabase
       .from('outlet_settings')
       .update({ onboarded: true })
-      .eq('user_id', currentUser.id);
+      .eq('user_id', ownerId);
     finishOnboardingBtn.disabled = false;
     if (settingsErr) {
       onboardMsg.textContent = settingsErr.message;
@@ -435,64 +615,79 @@
   });
 
   // ---------------------------------------------------------------
-  // Enter the main app (after login or after onboarding completes)
+  // Enter the main app
   // ---------------------------------------------------------------
   async function enterApp() {
     onboardScreen.classList.add('hidden');
     appScreen.classList.remove('hidden');
 
-    populateSettingsFields(currentSettings);
-    await loadMembers();
-    renderTankManageList();
-    renderMemberManageList();
+    applyRoleVisibility();
+    if (role === 'owner') {
+      populateSettingsFields(currentSettings);
+      renderTankManageList();
+      await loadStaffList();
+      renderStaffManageList();
+    }
     updateHeaders();
+    switchTab('monsoon');
 
-    await Promise.all([
-      loadEntries('monsoon_entries', monsoonCache, monsoonBody, renderMonsoonRow, addMonsoonRow),
-      loadEntries('rainy_entries', rainyCache, rainyBody, renderRainyRow, addRainyRow),
-    ]);
+    await Promise.all([loadMonsoon(), loadRainy(), loadContam()]);
+  }
+
+  function applyRoleVisibility() {
+    document.querySelectorAll('.settings-owner-only').forEach((el) => el.classList.toggle('hidden', role !== 'owner'));
+    document.querySelectorAll('.settings-staff-only').forEach((el) => el.classList.toggle('hidden', role !== 'staff'));
+    if (role === 'staff') {
+      staffOutletInfo.textContent = `${(currentSettings && currentSettings.outlet_name) || 'This outlet'} — owned by ${
+        (currentSettings && currentSettings.owner_name) || 'the owner'
+      }. You're signed in as staff.`;
+    }
+    roleBadge.textContent = role === 'owner' ? 'Owner' : `Staff · ${displayName}`;
   }
 
   // ---------------------------------------------------------------
-  // Outlet settings (owner name / outlet name / month / year)
+  // Outlet settings (owner only)
   // ---------------------------------------------------------------
   function updateHeaders() {
-    const outlet = outletNameInput.value.trim() || 'Water Dip Register';
-    const month = outletMonthInput.value;
-    const year = outletYearInput.value;
+    const outlet = (currentSettings && currentSettings.outlet_name) || 'Water Dip Register';
     topbarOutlet.textContent = outlet;
-    topbarMonthYear.textContent = month || year ? `${month} ${year}`.trim() : '';
+    const my = `${(currentSettings && currentSettings.month) || ''} ${(currentSettings && currentSettings.year) || ''}`.trim();
+    topbarMonthYear.textContent = my;
     document.title = `${outlet} — Water Dip Register`;
   }
 
   function populateSettingsFields(settings) {
     outletOwnerNameInput.value = settings.owner_name || '';
     outletNameInput.value = settings.outlet_name || '';
-    outletMonthInput.value = settings.month || '';
+    outletMonthValue = settings.month || '';
+    outletMonthLabel.textContent = outletMonthValue || 'Select month';
     outletYearInput.value = settings.year || new Date().getFullYear();
-    updateHeaders();
   }
 
-  [outletOwnerNameInput, outletNameInput, outletMonthInput, outletYearInput].forEach((el) => {
-    el.addEventListener('input', updateHeaders);
-  });
-
-  settingsToggleBtn.addEventListener('click', () => {
-    settingsCard.classList.toggle('hidden');
+  outletMonthBtn.addEventListener('click', () => {
+    openActionSheet({
+      title: 'Select month',
+      options: MONTHS.map((m) => ({ value: m, label: m })),
+      selectedValue: outletMonthValue,
+      onSelect: (val) => {
+        outletMonthValue = val;
+        outletMonthLabel.textContent = val;
+      },
+    });
   });
 
   saveSettingsBtn.addEventListener('click', async () => {
-    if (!currentUser) return;
+    if (!ownerId) return;
     saveSettingsBtn.disabled = true;
     settingsStatus.textContent = 'Saving…';
     const payload = {
       owner_name: outletOwnerNameInput.value.trim(),
       outlet_name: outletNameInput.value.trim(),
-      month: outletMonthInput.value,
+      month: outletMonthValue,
       year: outletYearInput.value,
       updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from('outlet_settings').update(payload).eq('user_id', currentUser.id);
+    const { error } = await supabase.from('outlet_settings').update(payload).eq('user_id', ownerId);
     saveSettingsBtn.disabled = false;
     if (error) {
       settingsStatus.textContent = '';
@@ -506,11 +701,11 @@
   });
 
   // ---------------------------------------------------------------
-  // Tank management
+  // Tank management (owner only)
   // ---------------------------------------------------------------
   function renderTankManageList() {
     if (tanks.length === 0) {
-      tankManageList.innerHTML = '<p class="panel-sub">No tanks yet — add one below.</p>';
+      tankManageList.innerHTML = '<p class="block-sub">No tanks yet — add one below.</p>';
       return;
     }
     tankManageList.innerHTML = tanks
@@ -518,18 +713,11 @@
         (t) => `
       <div class="manage-item" data-tank-id="${t.id}">
         <input type="text" data-tank-field="name" value="${esc(t.name)}" />
-        <input type="number" data-tank-field="capacity_litres" value="${t.capacity_litres ?? ''}" placeholder="Capacity" />
-        <span class="unit">litres</span>
+        <input type="number" data-tank-field="capacity_litres" value="${t.capacity_litres ?? ''}" placeholder="Litres" />
         <button type="button" class="btn-icon-danger" data-tank-action="delete" title="Remove tank">✕</button>
       </div>`
       )
       .join('');
-  }
-
-  function updateTankTileLabel(tankId, name, capacity) {
-    document.querySelectorAll(`.tank-tile[data-tank-id="${tankId}"] .tank-tile-name`).forEach((el) => {
-      el.innerHTML = `${esc(name)} ${capacity ? `<span class="cap">${fmtCap(capacity)}</span>` : ''}`;
-    });
   }
 
   tankManageList.addEventListener('input', (e) => {
@@ -537,13 +725,12 @@
     if (!item || !e.target.dataset.tankField) return;
     const tankId = item.dataset.tankId;
     const field = e.target.dataset.tankField;
-    let value = e.target.value;
+    const value = e.target.value;
     const tank = tanks.find((t) => t.id === tankId);
-    if (tank) {
-      tank[field] = field === 'capacity_litres' ? (value ? Number(value) : null) : value;
-      updateTankTileLabel(tankId, tank.name, tank.capacity_litres);
-    }
-    debouncedUpdate('tanks', tankId, field, field === 'capacity_litres' ? (value ? Number(value) : null) : value);
+    const stored = field === 'capacity_litres' ? (value ? Number(value) : null) : value;
+    if (tank) tank[field] = stored;
+    debouncedUpdate('tanks', tankId, field, stored);
+    refreshAllTables();
   });
 
   tankManageList.addEventListener('click', async (e) => {
@@ -559,7 +746,7 @@
     }
     tanks = tanks.filter((t) => t.id !== tankId);
     renderTankManageList();
-    renderAllEntryCards();
+    refreshAllTables();
   });
 
   addTankBtn.addEventListener('click', async () => {
@@ -570,7 +757,7 @@
     }
     const capRaw = newTankCapacity.value;
     const payload = {
-      user_id: currentUser.id,
+      user_id: ownerId,
       name,
       capacity_litres: capRaw ? Number(capRaw) : null,
       sort_order: tanks.length,
@@ -584,442 +771,716 @@
     newTankName.value = '';
     newTankCapacity.value = '';
     renderTankManageList();
-    renderAllEntryCards();
+    refreshAllTables();
   });
 
   // ---------------------------------------------------------------
-  // Outlet member management
+  // Staff accounts (owner only) — via server admin endpoints
   // ---------------------------------------------------------------
-  function renderMemberManageList() {
-    if (members.length === 0) {
-      memberManageList.innerHTML = '<p class="panel-sub">No members yet — add one below.</p>';
+  async function loadStaffList() {
+    const { data, error } = await supabase
+      .from('outlet_staff')
+      .select('*')
+      .eq('owner_user_id', ownerId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      showToast('Could not load staff: ' + error.message, true);
       return;
     }
-    memberManageList.innerHTML = members
+    staffList = data || [];
+  }
+
+  function renderStaffManageList() {
+    if (staffList.length === 0) {
+      staffManageList.innerHTML = '<p class="block-sub">No staff accounts yet — add one below.</p>';
+      return;
+    }
+    staffManageList.innerHTML = staffList
       .map(
-        (m) => `
-      <div class="manage-item" data-member-id="${m.id}">
-        <input type="text" data-member-field="member_name" value="${esc(m.member_name)}" />
-        <button type="button" class="btn-icon-danger" data-member-action="delete" title="Remove member">✕</button>
+        (s) => `
+      <div class="manage-item" data-staff-id="${s.id}" data-staff-user-id="${s.staff_user_id}">
+        <input type="text" data-staff-field="staff_name" value="${esc(s.staff_name)}" />
+        <span class="item-email">${esc(s.staff_email || '')}</span>
+        <button type="button" class="btn-icon-danger" data-staff-action="delete" title="Remove staff account">✕</button>
       </div>`
       )
       .join('');
   }
 
-  memberManageList.addEventListener('input', (e) => {
+  staffManageList.addEventListener('input', (e) => {
     const item = e.target.closest('.manage-item');
-    if (!item || !e.target.dataset.memberField) return;
-    const memberId = item.dataset.memberId;
-    const field = e.target.dataset.memberField;
+    if (!item || !e.target.dataset.staffField) return;
+    const id = item.dataset.staffId;
+    const field = e.target.dataset.staffField;
     const value = e.target.value;
-    const member = members.find((m) => m.id === memberId);
-    if (member) member[field] = value;
-    debouncedUpdate('outlet_members', memberId, field, value);
+    const s = staffList.find((x) => x.id === id);
+    if (s) s[field] = value;
+    debouncedUpdate('outlet_staff', id, field, value);
   });
 
-  memberManageList.addEventListener('click', async (e) => {
-    if (e.target.dataset.memberAction !== 'delete') return;
+  staffManageList.addEventListener('click', async (e) => {
+    if (e.target.dataset.staffAction !== 'delete') return;
     const item = e.target.closest('.manage-item');
-    const memberId = item.dataset.memberId;
-    if (!confirm('Remove this member? Signatures they already gave stay on past entries.')) return;
-    const { error } = await supabase.from('outlet_members').delete().eq('id', memberId);
-    if (error) {
-      showToast('Could not remove member: ' + error.message, true);
-      return;
+    const staffUserId = item.dataset.staffUserId;
+    const s = staffList.find((x) => x.staff_user_id === staffUserId);
+    if (!confirm(`Remove staff account for "${s ? s.staff_name : ''}"? They will no longer be able to log in.`)) return;
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`/api/staff/${staffUserId}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to remove staff account');
+      staffList = staffList.filter((x) => x.staff_user_id !== staffUserId);
+      renderStaffManageList();
+      showToast('Staff account removed');
+    } catch (err) {
+      showToast(err.message, true);
     }
-    members = members.filter((m) => m.id !== memberId);
-    if (lastSelectedMemberId === memberId) lastSelectedMemberId = null;
-    renderMemberManageList();
   });
 
-  addMemberBtn.addEventListener('click', async () => {
-    const name = newMemberName.value.trim();
-    if (!name) {
-      showToast('Enter the member\u2019s name first.', true);
+  addStaffBtn.addEventListener('click', async () => {
+    const name = newStaffName.value.trim();
+    const email = newStaffEmail.value.trim();
+    const password = newStaffPassword.value;
+    if (!name || !email || !password) {
+      showToast('Fill in name, email, and password.', true);
       return;
     }
-    const payload = { user_id: currentUser.id, member_name: name, sort_order: members.length };
-    const { data, error } = await supabase.from('outlet_members').insert(payload).select().single();
-    if (error) {
-      showToast('Could not add member: ' + error.message, true);
+    if (password.length < 6) {
+      showToast('Password must be at least 6 characters.', true);
       return;
     }
-    members.push(data);
-    newMemberName.value = '';
-    renderMemberManageList();
+    addStaffBtn.disabled = true;
+    try {
+      const token = await getAccessToken();
+      const res = await fetch('/api/create-staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to add staff account');
+      staffList.push(json.staff);
+      newStaffName.value = '';
+      newStaffEmail.value = '';
+      newStaffPassword.value = '';
+      renderStaffManageList();
+      showToast('Staff account created');
+    } catch (err) {
+      showToast(err.message, true);
+    } finally {
+      addStaffBtn.disabled = false;
+    }
   });
 
   // ---------------------------------------------------------------
-  // Tabs
+  // Bottom navigation / screen switching
   // ---------------------------------------------------------------
-  tabBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      tabBtns.forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      const tab = btn.dataset.tab;
-      monsoonPanel.classList.toggle('hidden', tab !== 'monsoon');
-      rainyPanel.classList.toggle('hidden', tab !== 'rainy');
-    });
+  function switchTab(tab) {
+    activeTab = tab;
+    navBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+    monsoonPanel.classList.toggle('hidden', tab !== 'monsoon');
+    rainyPanel.classList.toggle('hidden', tab !== 'rainy');
+    contamPanel.classList.toggle('hidden', tab !== 'contam');
+    settingsScreen.classList.toggle('hidden', tab !== 'settings');
+    fabAddBtn.classList.toggle('hidden', tab === 'settings');
+  }
+
+  navBtns.forEach((btn) => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  fabAddBtn.addEventListener('click', () => {
+    if (activeTab === 'monsoon') openEntryModal('monsoon', null);
+    else if (activeTab === 'rainy') openEntryModal('rainy', null);
+    else if (activeTab === 'contam') openEntryModal('contam', null);
   });
 
   // ---------------------------------------------------------------
-  // Generic entries loader
+  // Loading registers
   // ---------------------------------------------------------------
-  async function loadEntries(table, cache, container, renderFn, addFn) {
-    const { data, error } = await supabase
-      .from(table)
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .order('entry_date', { ascending: true })
-      .order('row_order', { ascending: true });
-
-    cache.clear();
-    container.innerHTML = '';
-    if (error) {
-      showToast('Could not load records: ' + error.message, true);
-      return;
-    }
-    (data || []).forEach((row) => {
-      rowTableMap[row.id] = table;
-      cache.set(row.id, row);
-      container.appendChild(renderFn(row));
-    });
-    if (!data || data.length === 0) {
-      await addFn();
-    }
-  }
-
-  function redrawList(cache, container, renderFn) {
-    container.innerHTML = '';
-    cache.forEach((row) => container.appendChild(renderFn(row)));
-  }
-
-  function renderAllEntryCards() {
-    redrawList(monsoonCache, monsoonBody, renderMonsoonRow);
-    redrawList(rainyCache, rainyBody, renderRainyRow);
-  }
-
-  // ---------------------------------------------------------------
-  // Tank tile + appearance select builders
-  // ---------------------------------------------------------------
-  function appearanceSelectHTML(tankId, slot, value) {
-    const opts = APPEARANCE_OPTIONS.map(
-      (opt) =>
-        `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt === 'Water Layer at bottom' ? 'Water layer' : opt}</option>`
-    ).join('');
-    return `<select class="appearance-select" data-tank="${tankId}" data-slot="${slot}" data-kind="appearance" data-val="${esc(value || '')}">
-      <option value="" ${!value ? 'selected' : ''} hidden>—</option>
-      ${opts}
-    </select>`;
-  }
-
-  function monsoonTankTileHTML(tank, readings) {
-    const r = (readings && readings[tank.id]) || {};
-    return `<div class="tank-tile" data-tank-id="${tank.id}">
-      <div class="tank-tile-name">${esc(tank.name)} ${tank.capacity_litres ? `<span class="cap">${fmtCap(tank.capacity_litres)}</span>` : ''}</div>
-      <div class="reading-row">
-        <span class="slot-label">AM</span>
-        <div class="reading-pair">
-          <input type="text" inputmode="decimal" class="dip-input" data-tank="${tank.id}" data-slot="morning" data-kind="dip" value="${esc(r.morning_dip)}" placeholder="mm" />
-          ${appearanceSelectHTML(tank.id, 'morning', r.morning_appearance)}
-        </div>
-      </div>
-      <div class="reading-row">
-        <span class="slot-label">PM</span>
-        <div class="reading-pair">
-          <input type="text" inputmode="decimal" class="dip-input" data-tank="${tank.id}" data-slot="evening" data-kind="dip" value="${esc(r.evening_dip)}" placeholder="mm" />
-          ${appearanceSelectHTML(tank.id, 'evening', r.evening_appearance)}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function rainyTankTileHTML(tank, readings) {
-    const r = (readings && readings[tank.id]) || {};
-    return `<div class="tank-tile" data-tank-id="${tank.id}">
-      <div class="tank-tile-name">${esc(tank.name)} ${tank.capacity_litres ? `<span class="cap">${fmtCap(tank.capacity_litres)}</span>` : ''}</div>
-      <div class="reading-row" style="grid-template-columns: 1fr;">
-        <div class="reading-pair">
-          <input type="text" inputmode="decimal" class="dip-input" data-tank="${tank.id}" data-slot="single" data-kind="dip" value="${esc(r.dip)}" placeholder="mm" />
-          ${appearanceSelectHTML(tank.id, 'single', r.appearance)}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function checkedCellHTML(row) {
-    if (row.checked_by_signature) {
-      return `<div class="signed-chip">
-        <img src="${row.checked_by_signature}" alt="signature" />
-        <span class="signer-name">${esc(row.checked_by_name || '')}</span>
-        <button type="button" data-action="resign">Edit</button>
-      </div>`;
-    }
-    return `<button type="button" class="sign-btn" data-action="sign">+ Sign</button>`;
-  }
-
-  function noTanksNotice() {
-    return '<div class="empty-state">No tanks configured yet — add one in Settings.</div>';
-  }
-
-  // ---------------------------------------------------------------
-  // Monsoon (monthly) cards
-  // ---------------------------------------------------------------
-  function monsoonCardHTML(row) {
-    const tilesHTML = tanks.length ? tanks.map((t) => monsoonTankTileHTML(t, row.readings)).join('') : noTanksNotice();
-    return `<div class="entry-card" data-id="${row.id}">
-      <div class="entry-card-header">
-        <input type="date" class="date-field" data-field="entry_date" value="${row.entry_date || ''}" />
-        <input type="text" class="remarks-field" data-field="remarks" value="${esc(row.remarks)}" placeholder="Remarks (optional)" />
-        <span class="spacer"></span>
-        <button type="button" class="btn-icon-danger" data-action="delete" title="Delete day">✕</button>
-      </div>
-      <div class="tank-grid">${tilesHTML}</div>
-      <div class="entry-card-footer">
-        <div class="footer-left">
-          <span class="row-status" data-status></span>
-          ${checkedCellHTML(row)}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function renderMonsoonRow(row) {
-    const wrap = document.createElement('div');
-    wrap.innerHTML = monsoonCardHTML(row);
-    return wrap.firstElementChild;
-  }
-
-  addMonsoonRowBtn.addEventListener('click', () => addMonsoonRow());
-
-  async function addMonsoonRow() {
-    if (!currentUser) return;
-    const rowOrder = monsoonBody.children.length;
+  async function loadMonsoon() {
     const { data, error } = await supabase
       .from('monsoon_entries')
-      .insert({ user_id: currentUser.id, entry_date: todayISO(), row_order: rowOrder, readings: {} })
-      .select()
-      .single();
+      .select('*')
+      .eq('user_id', ownerId)
+      .order('entry_date', { ascending: true })
+      .order('row_order', { ascending: true });
     if (error) {
-      showToast('Could not add row: ' + error.message, true);
+      showToast('Could not load monthly register: ' + error.message, true);
       return;
     }
-    rowTableMap[data.id] = 'monsoon_entries';
-    monsoonCache.set(data.id, data);
-    monsoonBody.appendChild(renderMonsoonRow(data));
+    monsoonRows = data || [];
+    renderMonsoonTable();
   }
 
-  saveMonsoonBtn.addEventListener('click', () => flushAll('monsoon_entries'));
+  async function loadRainy() {
+    const { data, error } = await supabase
+      .from('rainy_entries')
+      .select('*')
+      .eq('user_id', ownerId)
+      .order('entry_date', { ascending: true })
+      .order('row_order', { ascending: true });
+    if (error) {
+      showToast('Could not load hourly register: ' + error.message, true);
+      return;
+    }
+    rainyRows = data || [];
+    renderRainyTable();
+  }
+
+  async function loadContam() {
+    const { data, error } = await supabase
+      .from('contamination_log')
+      .select('*')
+      .eq('user_id', ownerId)
+      .order('entry_date', { ascending: true })
+      .order('row_order', { ascending: true });
+    if (error) {
+      showToast('Could not load contamination log: ' + error.message, true);
+      return;
+    }
+    contamRows = data || [];
+    renderContamTable();
+  }
+
+  function refreshAllTables() {
+    renderMonsoonTable();
+    renderRainyTable();
+    renderContamTable();
+  }
+
+  function emptyRowHTML(colCount, msg) {
+    return `<tr class="table-empty-row"><td colspan="${colCount}">${esc(msg)}</td></tr>`;
+  }
+
+  // ---------------------------------------------------------------
+  // Excel-style grid: Monthly (monsoon) register
+  // ---------------------------------------------------------------
+  function buildMonsoonThead() {
+    const row1 = ['<th rowspan="2">Date</th>'];
+    const row2 = [];
+    tanks.forEach((t) => {
+      row1.push(`<th colspan="2">${esc(t.name)} — Morning</th>`);
+      row1.push(`<th colspan="2">${esc(t.name)} — Evening</th>`);
+      row2.push('<th>Dip (mm)</th><th>Appearance</th>');
+      row2.push('<th>Dip (mm)</th><th>Appearance</th>');
+    });
+    row1.push('<th rowspan="2">Remarks</th>');
+    row1.push('<th rowspan="2">Checked By</th>');
+    monsoonThead.innerHTML = `<tr>${row1.join('')}</tr><tr>${row2.join('')}</tr>`;
+  }
+
+  function appearanceCellHTML(val) {
+    if (!val) return '<td>—</td>';
+    const cls = val.replace(/\s+/g, '_');
+    return `<td class="cell-appearance val-${cls}">${esc(appearanceLabel(val))}</td>`;
+  }
+
+  function signedCellHTML(signature, name, at, unsignedLabel) {
+    if (signature) {
+      return `<td><div class="cell-signed"><img src="${signature}" alt="signature" /><div class="sig-meta"><span class="sig-name">${esc(
+        name || ''
+      )}</span><span class="sig-time">${esc(fmtTime(at))}</span></div></div></td>`;
+    }
+    return `<td class="cell-unsigned">${esc(unsignedLabel)}</td>`;
+  }
+
+  function monsoonRowHTML(row) {
+    const cells = [`<td>${esc(row.entry_date) || '—'}</td>`];
+    tanks.forEach((t) => {
+      const r = (row.readings && row.readings[t.id]) || {};
+      cells.push(`<td>${esc(r.morning_dip) || '—'}</td>`);
+      cells.push(appearanceCellHTML(r.morning_appearance));
+      cells.push(`<td>${esc(r.evening_dip) || '—'}</td>`);
+      cells.push(appearanceCellHTML(r.evening_appearance));
+    });
+    cells.push(`<td class="cell-text">${esc(row.remarks)}</td>`);
+    cells.push(signedCellHTML(row.checked_by_signature, row.checked_by_name, row.checked_by_at, 'Not signed'));
+    return `<tr data-id="${row.id}">${cells.join('')}</tr>`;
+  }
+
+  function renderMonsoonTable() {
+    buildMonsoonThead();
+    monsoonBody.innerHTML = monsoonRows.length
+      ? monsoonRows.map(monsoonRowHTML).join('')
+      : emptyRowHTML(tanks.length * 4 + 3, "No entries yet — tap the + button to add today's reading.");
+  }
+
+  monsoonBody.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-id]');
+    if (tr) openEntryModal('monsoon', tr.dataset.id);
+  });
+
   printMonsoonBtn.addEventListener('click', () => preparePrint('monsoon'));
 
   // ---------------------------------------------------------------
-  // Rainy (hourly) cards
+  // Excel-style grid: Hourly (rainy) register
   // ---------------------------------------------------------------
-  function rainyCardHTML(row) {
-    const tilesHTML = tanks.length ? tanks.map((t) => rainyTankTileHTML(t, row.readings)).join('') : noTanksNotice();
-    return `<div class="entry-card" data-id="${row.id}">
-      <div class="entry-card-header">
-        <input type="date" class="date-field" data-field="entry_date" value="${row.entry_date || ''}" />
-        <input type="text" class="hour-field" data-field="hour_time" value="${esc(row.hour_time)}" placeholder="08:00 AM" />
-        <input type="text" class="remarks-field" data-field="remarks" value="${esc(row.remarks)}" placeholder="Remarks (optional)" />
-        <span class="spacer"></span>
-        <button type="button" class="btn-icon-danger" data-action="delete" title="Delete reading">✕</button>
-      </div>
-      <div class="tank-grid">${tilesHTML}</div>
-      <div class="entry-card-footer">
-        <div class="footer-left">
-          <span class="row-status" data-status></span>
-          ${checkedCellHTML(row)}
-        </div>
-      </div>
-    </div>`;
+  function buildRainyThead() {
+    const row1 = ['<th rowspan="2">Date</th>', '<th rowspan="2">Hour/Time</th>'];
+    const row2 = [];
+    tanks.forEach((t) => {
+      row1.push(`<th colspan="2">${esc(t.name)}</th>`);
+      row2.push('<th>Dip (mm)</th><th>Appearance</th>');
+    });
+    row1.push('<th rowspan="2">Remarks</th>');
+    row1.push('<th rowspan="2">Checked By</th>');
+    rainyThead.innerHTML = `<tr>${row1.join('')}</tr><tr>${row2.join('')}</tr>`;
   }
 
-  function renderRainyRow(row) {
-    const wrap = document.createElement('div');
-    wrap.innerHTML = rainyCardHTML(row);
-    return wrap.firstElementChild;
+  function rainyRowHTML(row) {
+    const cells = [`<td>${esc(row.entry_date) || '—'}</td>`, `<td>${esc(row.hour_time) || '—'}</td>`];
+    tanks.forEach((t) => {
+      const r = (row.readings && row.readings[t.id]) || {};
+      cells.push(`<td>${esc(r.dip) || '—'}</td>`);
+      cells.push(appearanceCellHTML(r.appearance));
+    });
+    cells.push(`<td class="cell-text">${esc(row.remarks)}</td>`);
+    cells.push(signedCellHTML(row.checked_by_signature, row.checked_by_name, row.checked_by_at, 'Not signed'));
+    return `<tr data-id="${row.id}">${cells.join('')}</tr>`;
   }
 
-  addRainyRowBtn.addEventListener('click', () => addRainyRow());
-
-  async function addRainyRow() {
-    if (!currentUser) return;
-    const rowOrder = rainyBody.children.length;
-    const { data, error } = await supabase
-      .from('rainy_entries')
-      .insert({ user_id: currentUser.id, entry_date: todayISO(), row_order: rowOrder, readings: {} })
-      .select()
-      .single();
-    if (error) {
-      showToast('Could not add row: ' + error.message, true);
-      return;
-    }
-    rowTableMap[data.id] = 'rainy_entries';
-    rainyCache.set(data.id, data);
-    rainyBody.appendChild(renderRainyRow(data));
+  function renderRainyTable() {
+    buildRainyThead();
+    rainyBody.innerHTML = rainyRows.length
+      ? rainyRows.map(rainyRowHTML).join('')
+      : emptyRowHTML(tanks.length * 2 + 4, 'No entries yet — tap the + button to add an hourly reading.');
   }
 
-  saveRainyBtn.addEventListener('click', () => flushAll('rainy_entries'));
+  rainyBody.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-id]');
+    if (tr) openEntryModal('rainy', tr.dataset.id);
+  });
+
   printRainyBtn.addEventListener('click', () => preparePrint('rainy'));
+
+  // ---------------------------------------------------------------
+  // Excel-style grid: Contamination log
+  // ---------------------------------------------------------------
+  function contamRowHTML(row, idx) {
+    const tank = tanks.find((t) => t.id === row.tank_id);
+    const tankNo = tank ? tanks.indexOf(tank) + 1 : '—';
+    const product = tank ? tank.name : '—';
+    const confirmedLabel = row.contamination_confirmed === 'Y' ? 'Yes' : row.contamination_confirmed === 'N' ? 'No' : '—';
+    return `<tr data-id="${row.id}">
+      <td>${idx + 1}</td>
+      <td>${esc(row.entry_date) || '—'}</td>
+      <td>${tankNo}</td>
+      <td class="cell-text">${esc(product)}</td>
+      <td>${esc(row.water_found_mm) || '—'}</td>
+      ${appearanceCellHTML(row.appearance)}
+      <td>${esc(confirmedLabel)}</td>
+      <td class="cell-text">${esc(row.immediate_action)}</td>
+      <td>${row.qty_decanted_litres ?? '—'}</td>
+      <td class="cell-text">${esc(row.reported_to)}</td>
+      <td class="cell-text">${esc(row.corrective_action)}</td>
+      ${signedCellHTML(row.verified_by_signature, row.verified_by_name, row.verified_at, 'Not verified')}
+      <td class="cell-text">${esc(row.remarks)}</td>
+    </tr>`;
+  }
+
+  function renderContamTable() {
+    contamBody.innerHTML = contamRows.length
+      ? contamRows.map((row, idx) => contamRowHTML(row, idx)).join('')
+      : emptyRowHTML(13, 'No contamination instances logged — tap the + button to log one.');
+  }
+
+  contamBody.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-id]');
+    if (tr) openEntryModal('contam', tr.dataset.id);
+  });
+
+  printContamBtn.addEventListener('click', () => preparePrint('contam'));
 
   // ---------------------------------------------------------------
   // Print
   // ---------------------------------------------------------------
   function preparePrint(kind) {
-    document.querySelector(`.tab-btn[data-tab="${kind}"]`).click();
-    settingsCard.classList.add('hidden');
-    printOutletName.textContent = outletNameInput.value.trim() || 'Water Dip Register';
-    const title =
-      kind === 'monsoon'
-        ? 'Daily Water Dip & Appearance — Monthly Register'
-        : 'Hourly Water Dip & Appearance — Rainy Days Register';
-    const monthYear = `${outletMonthInput.value || ''} ${outletYearInput.value || ''}`.trim();
-    printSubtitle.textContent = monthYear ? `${title} · ${monthYear}` : title;
+    switchTab(kind);
+    printOutletName.textContent = (currentSettings && currentSettings.outlet_name) || 'Water Dip Register';
+    const titles = {
+      monsoon: 'Daily Water Dip & Appearance — Monthly Register',
+      rainy: 'Hourly Water Dip & Appearance — Rainy Days Register',
+      contam: 'Water Contamination Instance Log',
+    };
+    const monthYear = `${(currentSettings && currentSettings.month) || ''} ${(currentSettings && currentSettings.year) || ''}`.trim();
+    printSubtitle.textContent = monthYear ? `${titles[kind]} · ${monthYear}` : titles[kind];
     setTimeout(() => window.print(), 50);
   }
 
   // ---------------------------------------------------------------
-  // Shared card event delegation (edits + delete + sign)
+  // Entry popup — shared vertical form for all three registers
   // ---------------------------------------------------------------
-  function wireEntryList(container) {
-    container.addEventListener('input', (e) => {
-      const card = e.target.closest('.entry-card');
-      if (!card) return;
-      const rowId = card.dataset.id;
-
-      if (e.target.dataset.field) {
-        const table = rowTableMap[rowId];
-        const cache = table === 'monsoon_entries' ? monsoonCache : rainyCache;
-        const row = cache.get(rowId);
-        if (row) row[e.target.dataset.field] = e.target.value;
-        scheduleSave(rowId, e.target.dataset.field, e.target.value);
-      } else if (e.target.dataset.tank) {
-        const { tank, slot, kind } = e.target.dataset;
-        updateReading(rowId, tank, slot, kind, e.target.value);
-      }
-    });
-
-    container.addEventListener('change', (e) => {
-      if (!e.target.classList.contains('appearance-select')) return;
-      e.target.dataset.val = e.target.value;
-      const card = e.target.closest('.entry-card');
-      const rowId = card.dataset.id;
-      const { tank, slot, kind } = e.target.dataset;
-      updateReading(rowId, tank, slot, kind, e.target.value);
-    });
-
-    container.addEventListener('click', async (e) => {
-      const action = e.target.dataset.action;
-      if (!action) return;
-      const card = e.target.closest('.entry-card');
-      const rowId = card.dataset.id;
-
-      if (action === 'delete') {
-        if (!confirm('Delete this entry? This cannot be undone.')) return;
-        const table = rowTableMap[rowId];
-        const { error } = await supabase.from(table).delete().eq('id', rowId);
-        if (error) {
-          showToast('Could not delete: ' + error.message, true);
-          return;
-        }
-        (table === 'monsoon_entries' ? monsoonCache : rainyCache).delete(rowId);
-        delete rowTableMap[rowId];
-        card.remove();
-        showToast('Entry deleted');
-      }
-
-      if (action === 'sign' || action === 'resign') {
-        openSignatureModal(rowId);
-      }
-    });
+  function findRow(kind, id) {
+    const list = kind === 'monsoon' ? monsoonRows : kind === 'rainy' ? rainyRows : contamRows;
+    return list.find((r) => r.id === id) || null;
   }
 
-  wireEntryList(monsoonBody);
-  wireEntryList(rainyBody);
+  function buildSignSection(label, existingName, existingAt, existingSig) {
+    const already = existingSig
+      ? `<div class="signed-as-meta">Previously ${esc(label.toLowerCase())} by ${esc(existingName || '')} at ${esc(fmtTime(existingAt))}</div>`
+      : '';
+    return `
+      <div class="sign-section">
+        <div class="sign-section-title">${esc(label)}</div>
+        <div class="signed-as-row">
+          <div class="signed-as-avatar">${esc(initials(displayName).toUpperCase())}</div>
+          <div class="signed-as-text">
+            <span class="signed-as-name">${esc(displayName)}</span>
+            <span class="signed-as-meta">${already ? 'Sign again to update' : "Signing now — time is captured automatically"}</span>
+          </div>
+        </div>
+        ${already}
+        <div class="sig-wrap"><canvas class="sig-canvas" id="ef_sigCanvas"></canvas></div>
+        <div class="sig-actions"><button type="button" class="link-btn" id="ef_clearSig">Clear signature</button></div>
+      </div>`;
+  }
 
-  // ---------------------------------------------------------------
-  // Signature modal (member picker + pad)
-  // ---------------------------------------------------------------
-  function resizeCanvas() {
+  function buildMonsoonForm(row) {
+    const dateVal = row ? row.entry_date : todayISO();
+    const remarksVal = row ? row.remarks || '' : '';
+    const tankBlocks = tanks.length
+      ? tanks
+          .map((t) => {
+            const r = (row && row.readings && row.readings[t.id]) || {};
+            return `
+        <div class="tank-section" data-tank-id="${t.id}">
+          <div class="tank-section-title">${esc(t.name)} ${t.capacity_litres ? `<span class="cap">${fmtCap(t.capacity_litres)}</span>` : ''}</div>
+          <div class="slot-block">
+            <div class="slot-heading">Morning</div>
+            <div class="sub-row"><label>Water dip (mm)</label><input type="text" inputmode="decimal" data-field="dip" data-slot="morning" value="${esc(r.morning_dip)}" placeholder="0.0" /></div>
+            <div class="sub-row"><label>Appearance</label>
+              <button type="button" class="picker-btn appearance-field" data-slot="morning" data-val="${esc(r.morning_appearance || '')}">
+                <span class="val-label">${esc(appearanceLabel(r.morning_appearance))}</span>
+                <svg class="chev"><use href="#icon-chevron"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="slot-block">
+            <div class="slot-heading">Evening</div>
+            <div class="sub-row"><label>Water dip (mm)</label><input type="text" inputmode="decimal" data-field="dip" data-slot="evening" value="${esc(r.evening_dip)}" placeholder="0.0" /></div>
+            <div class="sub-row"><label>Appearance</label>
+              <button type="button" class="picker-btn appearance-field" data-slot="evening" data-val="${esc(r.evening_appearance || '')}">
+                <span class="val-label">${esc(appearanceLabel(r.evening_appearance))}</span>
+                <svg class="chev"><use href="#icon-chevron"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+          })
+          .join('')
+      : '<p class="block-sub">No tanks configured yet — add one in Settings.</p>';
+
+    return `
+      <h3 class="entry-modal-title">${row ? 'Edit day' : 'New day'}</h3>
+      <label class="field"><span>Date</span><input type="date" id="ef_date" value="${dateVal}" /></label>
+      ${tankBlocks}
+      <label class="field"><span>Remarks</span><input type="text" id="ef_remarks" value="${esc(remarksVal)}" placeholder="Optional" /></label>
+      ${buildSignSection('Checked by', row ? row.checked_by_name : null, row ? row.checked_by_at : null, row ? row.checked_by_signature : null)}
+    `;
+  }
+
+  function buildRainyForm(row) {
+    const dateVal = row ? row.entry_date : todayISO();
+    const hourVal = row ? row.hour_time || '' : '';
+    const remarksVal = row ? row.remarks || '' : '';
+    const tankBlocks = tanks.length
+      ? tanks
+          .map((t) => {
+            const r = (row && row.readings && row.readings[t.id]) || {};
+            return `
+        <div class="tank-section" data-tank-id="${t.id}">
+          <div class="tank-section-title">${esc(t.name)} ${t.capacity_litres ? `<span class="cap">${fmtCap(t.capacity_litres)}</span>` : ''}</div>
+          <div class="sub-row"><label>Water dip (mm)</label><input type="text" inputmode="decimal" data-field="dip" data-slot="single" value="${esc(r.dip)}" placeholder="0.0" /></div>
+          <div class="sub-row"><label>Appearance</label>
+            <button type="button" class="picker-btn appearance-field" data-slot="single" data-val="${esc(r.appearance || '')}">
+              <span class="val-label">${esc(appearanceLabel(r.appearance))}</span>
+              <svg class="chev"><use href="#icon-chevron"/></svg>
+            </button>
+          </div>
+        </div>`;
+          })
+          .join('')
+      : '<p class="block-sub">No tanks configured yet — add one in Settings.</p>';
+
+    return `
+      <h3 class="entry-modal-title">${row ? 'Edit reading' : 'New reading'}</h3>
+      <label class="field"><span>Date</span><input type="date" id="ef_date" value="${dateVal}" /></label>
+      <label class="field"><span>Hour / time</span><input type="text" id="ef_hour" value="${esc(hourVal)}" placeholder="e.g. 08:00 AM" /></label>
+      ${tankBlocks}
+      <label class="field"><span>Remarks</span><input type="text" id="ef_remarks" value="${esc(remarksVal)}" placeholder="Optional" /></label>
+      ${buildSignSection('Checked by', row ? row.checked_by_name : null, row ? row.checked_by_at : null, row ? row.checked_by_signature : null)}
+    `;
+  }
+
+  function buildContamForm(row) {
+    const dateVal = row ? row.entry_date : todayISO();
+    const tankId = row ? row.tank_id : tanks[0] ? tanks[0].id : '';
+    const tank = tanks.find((t) => t.id === tankId);
+    return `
+      <h3 class="entry-modal-title">${row ? 'Edit contamination record' : 'New contamination record'}</h3>
+      <label class="field"><span>Date</span><input type="date" id="cf_date" value="${dateVal}" /></label>
+      <label class="field"><span>Tank</span>
+        <button type="button" class="picker-btn" id="cf_tank_btn" data-val="${esc(tankId || '')}">
+          <span id="cf_tank_label">${tank ? esc(tank.name) : 'Select tank'}</span>
+          <svg class="chev"><use href="#icon-chevron"/></svg>
+        </button>
+      </label>
+      <label class="field"><span>Water found (mm)</span><input type="text" inputmode="decimal" id="cf_water" value="${esc(row ? row.water_found_mm : '')}" placeholder="0.0" /></label>
+      <label class="field"><span>Appearance</span>
+        <button type="button" class="picker-btn" id="cf_appearance_btn" data-val="${esc(row ? row.appearance : '') || ''}">
+          <span id="cf_appearance_label">${esc(appearanceLabel(row ? row.appearance : ''))}</span>
+          <svg class="chev"><use href="#icon-chevron"/></svg>
+        </button>
+      </label>
+      <label class="field"><span>Contamination confirmed?</span>
+        <button type="button" class="picker-btn" id="cf_confirmed_btn" data-val="${esc(row ? row.contamination_confirmed : '') || ''}">
+          <span id="cf_confirmed_label">${row && row.contamination_confirmed ? (row.contamination_confirmed === 'Y' ? 'Yes' : 'No') : 'Select'}</span>
+          <svg class="chev"><use href="#icon-chevron"/></svg>
+        </button>
+      </label>
+      <label class="field"><span>Immediate action taken</span><textarea id="cf_immediate">${esc(row ? row.immediate_action : '')}</textarea></label>
+      <label class="field"><span>Qty decanted / removed (litres)</span><input type="number" id="cf_qty" value="${row && row.qty_decanted_litres != null ? row.qty_decanted_litres : ''}" /></label>
+      <label class="field"><span>Reported to (name &amp; designation)</span><input type="text" id="cf_reported" value="${esc(row ? row.reported_to : '')}" /></label>
+      <label class="field"><span>Corrective action taken</span><textarea id="cf_corrective">${esc(row ? row.corrective_action : '')}</textarea></label>
+      <label class="field"><span>Remarks</span><input type="text" id="cf_remarks" value="${esc(row ? row.remarks : '')}" /></label>
+      ${buildSignSection('Verified by', row ? row.verified_by_name : null, row ? row.verified_at : null, row ? row.verified_by_signature : null)}
+    `;
+  }
+
+  function buildEntryActionsHTML(rowId) {
+    return `
+      <div class="left-actions">${rowId ? '<button type="button" class="btn btn-danger-text" id="ef_delete">Delete</button>' : ''}</div>
+      <div class="right-actions">
+        <button type="button" class="btn btn-ghost" id="ef_cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="ef_save">Save</button>
+      </div>`;
+  }
+
+  function resizeSigCanvas(canvas) {
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    signatureCanvas.width = signatureCanvas.offsetWidth * ratio;
-    signatureCanvas.height = signatureCanvas.offsetHeight * ratio;
-    signatureCanvas.getContext('2d').scale(ratio, ratio);
-    if (signaturePad) signaturePad.clear();
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    canvas.getContext('2d').scale(ratio, ratio);
   }
 
-  function openSignatureModal(rowId) {
-    if (members.length === 0) {
-      showToast('Add at least one outlet member in Settings before signing.', true);
-      return;
-    }
-    signingRowId = rowId;
-    signerSelect.innerHTML = members
-      .map((m) => `<option value="${m.id}">${esc(m.member_name)}</option>`)
-      .join('');
-    const preferred = members.find((m) => m.id === lastSelectedMemberId);
-    signerSelect.value = preferred ? preferred.id : members[0].id;
-
-    signatureModal.classList.remove('hidden');
-    if (!signaturePad) {
-      signaturePad = new SignaturePad(signatureCanvas, { backgroundColor: 'rgba(255,255,255,1)', penColor: '#0B3556' });
-    }
-    resizeCanvas();
+  function wireAppearanceButtons() {
+    entryModalBody.querySelectorAll('.appearance-field').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        openActionSheet({
+          title: 'Appearance',
+          options: APPEARANCE_OPTIONS,
+          selectedValue: btn.dataset.val,
+          onSelect: (val) => {
+            btn.dataset.val = val;
+            btn.querySelector('.val-label').textContent = appearanceLabel(val);
+          },
+        });
+      });
+    });
   }
 
-  function closeSignatureModal() {
-    signatureModal.classList.add('hidden');
-    signingRowId = null;
+  function wireContamPickers() {
+    const tankBtn = document.getElementById('cf_tank_btn');
+    tankBtn.addEventListener('click', () => {
+      openActionSheet({
+        title: 'Select tank',
+        options: tanks.map((t) => ({ value: t.id, label: t.name })),
+        selectedValue: tankBtn.dataset.val,
+        onSelect: (val) => {
+          tankBtn.dataset.val = val;
+          const t = tanks.find((x) => x.id === val);
+          document.getElementById('cf_tank_label').textContent = t ? t.name : 'Select tank';
+        },
+      });
+    });
+    const apBtn = document.getElementById('cf_appearance_btn');
+    apBtn.addEventListener('click', () => {
+      openActionSheet({
+        title: 'Appearance',
+        options: APPEARANCE_OPTIONS,
+        selectedValue: apBtn.dataset.val,
+        onSelect: (val) => {
+          apBtn.dataset.val = val;
+          document.getElementById('cf_appearance_label').textContent = appearanceLabel(val);
+        },
+      });
+    });
+    const confBtn = document.getElementById('cf_confirmed_btn');
+    confBtn.addEventListener('click', () => {
+      openActionSheet({
+        title: 'Contamination confirmed?',
+        options: [{ value: 'Y', label: 'Yes' }, { value: 'N', label: 'No' }],
+        selectedValue: confBtn.dataset.val,
+        onSelect: (val) => {
+          confBtn.dataset.val = val;
+          document.getElementById('cf_confirmed_label').textContent = val === 'Y' ? 'Yes' : 'No';
+        },
+      });
+    });
   }
 
-  clearSigBtn.addEventListener('click', () => signaturePad && signaturePad.clear());
-  cancelSigBtn.addEventListener('click', closeSignatureModal);
+  function openEntryModal(kind, rowId) {
+    entryModalKind = kind;
+    entryModalRowId = rowId;
+    const row = rowId ? findRow(kind, rowId) : null;
 
-  saveSigBtn.addEventListener('click', async () => {
-    if (!signingRowId || !signaturePad) return;
-    if (signaturePad.isEmpty()) {
-      showToast('Please sign before saving.', true);
-      return;
-    }
-    const dataUrl = signaturePad.toDataURL('image/png');
-    const memberId = signerSelect.value;
-    const member = members.find((m) => m.id === memberId);
-    const memberName = member ? member.member_name : '';
-    const rowId = signingRowId;
-    const table = rowTableMap[rowId];
+    let formHTML;
+    if (kind === 'monsoon') formHTML = buildMonsoonForm(row);
+    else if (kind === 'rainy') formHTML = buildRainyForm(row);
+    else formHTML = buildContamForm(row);
 
-    const { error } = await supabase
-      .from(table)
-      .update({ checked_by_signature: dataUrl, checked_by_name: memberName, checked_by_member_id: memberId })
-      .eq('id', rowId);
+    entryModalBody.innerHTML = formHTML;
+    entryModalActions.innerHTML = buildEntryActionsHTML(rowId);
 
-    if (error) {
-      showToast('Could not save signature: ' + error.message, true);
-      return;
-    }
+    wireAppearanceButtons();
+    if (kind === 'contam') wireContamPickers();
 
-    const cache = table === 'monsoon_entries' ? monsoonCache : rainyCache;
-    const row = cache.get(rowId);
-    if (row) {
-      row.checked_by_signature = dataUrl;
-      row.checked_by_name = memberName;
-      row.checked_by_member_id = memberId;
-    }
-    lastSelectedMemberId = memberId;
+    document.getElementById('ef_cancel').addEventListener('click', closeEntryModal);
+    if (rowId) document.getElementById('ef_delete').addEventListener('click', () => handleEntryDelete(kind, rowId));
+    document.getElementById('ef_save').addEventListener('click', () => handleEntrySave(kind, rowId));
 
-    const card = document.querySelector(`.entry-card[data-id="${rowId}"]`);
-    const footerLeft = card.querySelector('.footer-left');
-    const chip = footerLeft.querySelector('.signed-chip, .sign-btn');
-    chip.outerHTML = checkedCellHTML({ checked_by_signature: dataUrl, checked_by_name: memberName });
+    entryModal.classList.remove('hidden');
 
-    closeSignatureModal();
-    showToast('Signature saved');
-  });
+    const canvas = document.getElementById('ef_sigCanvas');
+    entryModalSignaturePad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,1)', penColor: '#0B3556' });
+    requestAnimationFrame(() => resizeSigCanvas(canvas));
+    document.getElementById('ef_clearSig').addEventListener('click', () => entryModalSignaturePad.clear());
+  }
+
+  function closeEntryModal() {
+    entryModal.classList.add('hidden');
+    entryModalKind = null;
+    entryModalRowId = null;
+    entryModalSignaturePad = null;
+  }
 
   window.addEventListener('resize', () => {
-    if (signatureModal && !signatureModal.classList.contains('hidden')) resizeCanvas();
+    if (!entryModal.classList.contains('hidden')) {
+      const canvas = document.getElementById('ef_sigCanvas');
+      if (canvas) resizeSigCanvas(canvas);
+    }
   });
+
+  function applySignatureToPayload(payload, nameField, sigField, atField, userField) {
+    if (entryModalSignaturePad && !entryModalSignaturePad.isEmpty()) {
+      payload[sigField] = entryModalSignaturePad.toDataURL('image/png');
+      payload[nameField] = displayName;
+      payload[atField] = new Date().toISOString();
+      payload[userField] = currentUser.id;
+    }
+  }
+
+  async function upsertRow(table, rowId, payload, rowsArray, rowOrderBase) {
+    if (rowId) {
+      const { data, error } = await supabase.from(table).update(payload).eq('id', rowId).select().single();
+      if (error) {
+        showToast('Could not save: ' + error.message, true);
+        return false;
+      }
+      const idx = rowsArray.findIndex((r) => r.id === rowId);
+      if (idx > -1) rowsArray[idx] = data;
+      return true;
+    }
+    const { data, error } = await supabase
+      .from(table)
+      .insert({ user_id: ownerId, row_order: rowOrderBase, ...payload })
+      .select()
+      .single();
+    if (error) {
+      showToast('Could not save: ' + error.message, true);
+      return false;
+    }
+    rowsArray.push(data);
+    return true;
+  }
+
+  async function handleEntrySave(kind, rowId) {
+    const saveBtn = document.getElementById('ef_save');
+    saveBtn.disabled = true;
+    try {
+      if (kind === 'monsoon') {
+        const readings = {};
+        entryModalBody.querySelectorAll('.tank-section').forEach((sec) => {
+          const tid = sec.dataset.tankId;
+          readings[tid] = {
+            morning_dip: sec.querySelector('input[data-slot="morning"]').value.trim(),
+            morning_appearance: sec.querySelector('.appearance-field[data-slot="morning"]').dataset.val || '',
+            evening_dip: sec.querySelector('input[data-slot="evening"]').value.trim(),
+            evening_appearance: sec.querySelector('.appearance-field[data-slot="evening"]').dataset.val || '',
+          };
+        });
+        const payload = {
+          entry_date: document.getElementById('ef_date').value,
+          remarks: document.getElementById('ef_remarks').value.trim(),
+          readings,
+        };
+        applySignatureToPayload(payload, 'checked_by_name', 'checked_by_signature', 'checked_by_at', 'checked_by_user_id');
+        const ok = await upsertRow('monsoon_entries', rowId, payload, monsoonRows, monsoonRows.length);
+        if (!ok) return;
+        renderMonsoonTable();
+      } else if (kind === 'rainy') {
+        const readings = {};
+        entryModalBody.querySelectorAll('.tank-section').forEach((sec) => {
+          const tid = sec.dataset.tankId;
+          readings[tid] = {
+            dip: sec.querySelector('input[data-slot="single"]').value.trim(),
+            appearance: sec.querySelector('.appearance-field[data-slot="single"]').dataset.val || '',
+          };
+        });
+        const payload = {
+          entry_date: document.getElementById('ef_date').value,
+          hour_time: document.getElementById('ef_hour').value.trim(),
+          remarks: document.getElementById('ef_remarks').value.trim(),
+          readings,
+        };
+        applySignatureToPayload(payload, 'checked_by_name', 'checked_by_signature', 'checked_by_at', 'checked_by_user_id');
+        const ok = await upsertRow('rainy_entries', rowId, payload, rainyRows, rainyRows.length);
+        if (!ok) return;
+        renderRainyTable();
+      } else {
+        const qtyRaw = document.getElementById('cf_qty').value;
+        const payload = {
+          entry_date: document.getElementById('cf_date').value,
+          tank_id: document.getElementById('cf_tank_btn').dataset.val || null,
+          water_found_mm: document.getElementById('cf_water').value.trim(),
+          appearance: document.getElementById('cf_appearance_btn').dataset.val || '',
+          contamination_confirmed: document.getElementById('cf_confirmed_btn').dataset.val || '',
+          immediate_action: document.getElementById('cf_immediate').value.trim(),
+          qty_decanted_litres: qtyRaw ? Number(qtyRaw) : null,
+          reported_to: document.getElementById('cf_reported').value.trim(),
+          corrective_action: document.getElementById('cf_corrective').value.trim(),
+          remarks: document.getElementById('cf_remarks').value.trim(),
+        };
+        applySignatureToPayload(payload, 'verified_by_name', 'verified_by_signature', 'verified_at', 'verified_by_user_id');
+        const ok = await upsertRow('contamination_log', rowId, payload, contamRows, contamRows.length);
+        if (!ok) return;
+        renderContamTable();
+      }
+      closeEntryModal();
+      showToast('Saved');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  async function handleEntryDelete(kind, rowId) {
+    if (!confirm('Delete this entry? This cannot be undone.')) return;
+    const table = kind === 'monsoon' ? 'monsoon_entries' : kind === 'rainy' ? 'rainy_entries' : 'contamination_log';
+    const rowsArray = kind === 'monsoon' ? monsoonRows : kind === 'rainy' ? rainyRows : contamRows;
+    const { error } = await supabase.from(table).delete().eq('id', rowId);
+    if (error) {
+      showToast('Could not delete: ' + error.message, true);
+      return;
+    }
+    const idx = rowsArray.findIndex((r) => r.id === rowId);
+    if (idx > -1) rowsArray.splice(idx, 1);
+    if (kind === 'monsoon') renderMonsoonTable();
+    else if (kind === 'rainy') renderRainyTable();
+    else renderContamTable();
+    closeEntryModal();
+    showToast('Entry deleted');
+  }
 
   // ---------------------------------------------------------------
   // Boot
@@ -1027,6 +1488,13 @@
   let initialized = false;
   if (supabase) {
     supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        authScreen.classList.add('hidden');
+        onboardScreen.classList.add('hidden');
+        appScreen.classList.add('hidden');
+        recoveryScreen.classList.remove('hidden');
+        return;
+      }
       if (!initialized) return;
       if (event === 'SIGNED_IN' && session) onLogin(session);
       if (event === 'SIGNED_OUT') onLogout();
