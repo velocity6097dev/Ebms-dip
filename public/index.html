@@ -18,10 +18,13 @@
   <symbol id="icon-rain" viewBox="0 0 24 24"><path d="M7 16a4 4 0 010-8 5 5 0 019.6-1.5A4 4 0 0118 16H7z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M8 19l-1 2M12 19l-1 2M16 19l-1 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
   <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2L12 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
   <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M8 17h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="7" r="2" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="6" cy="17" r="2" stroke="currentColor" stroke-width="1.8" fill="none"/></symbol>
-  <symbol id="icon-print" viewBox="0 0 24 24"><rect x="6" y="9" width="12" height="7" rx="1" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M6 9V4h12v5M8 16v4h8v-4" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none"/></symbol>
+  <symbol id="icon-print" viewBox="0 0 24 24"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9V2h12v7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="14" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.8" fill="none"/></symbol>
+  <symbol id="icon-user-plus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M18 8v6M15 11h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="icon-logout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 16l5-4-5-4M14.5 12H3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
   <symbol id="icon-check" viewBox="0 0 24 24"><path d="M5 12l5 5L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
   <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+  <symbol id="icon-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
   <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.7" fill="none"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7" fill="none"/></symbol>
   <symbol id="icon-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M10.6 10.7a3 3 0 004.1 4.1M7 6.5C4.7 8 3 12 3 12s4 7 9 7c1.7 0 3.2-.4 4.5-1.1M17.5 17c2-1.6 3.5-5 3.5-5s-1.3-2.4-3.5-4.1" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></symbol>
 </svg>
@@ -160,7 +163,11 @@
       <strong id="topbarOutlet">Water Dip Register</strong>
       <span class="topbar-sub" id="topbarMonthYear">&nbsp;</span>
     </div>
-    <span class="role-badge" id="roleBadge"></span>
+    <div class="topbar-actions">
+      <span class="role-badge" id="roleBadge"></span>
+      <button class="topbar-icon-btn settings-owner-only hidden" id="topbarAddStaffBtn" title="Add staff account"><svg><use href="#icon-user-plus"/></svg></button>
+      <button class="topbar-icon-btn" id="topbarLogoutBtn" title="Log out"><svg><use href="#icon-logout"/></svg></button>
+    </div>
   </header>
 
   <!-- Print-only heading, populated from settings just before printing -->
@@ -291,24 +298,14 @@
 
       <div class="settings-block settings-owner-only">
         <h3 class="block-title">Staff accounts</h3>
-        <p class="block-sub">Each staff member gets their own login. When they sign a reading, their name and the time are captured automatically — nobody has to pick who's signing.</p>
+        <p class="block-sub">Each staff member gets their own login. When they sign a reading, their name and the time are captured automatically — nobody has to pick who's signing. Tap the <strong>+ person</strong> icon at the top of the screen to add one.</p>
         <div id="staffManageList" class="manage-list"></div>
-        <div class="stacked-add-form">
-          <input type="text" id="newStaffName" placeholder="Staff member's name" />
-          <input type="email" id="newStaffEmail" placeholder="Their email (used to log in)" />
-          <div class="pw-wrap">
-            <input type="password" id="newStaffPassword" placeholder="Temporary password (min 6 characters)" />
-            <button type="button" class="pw-toggle" data-toggle-for="newStaffPassword"><svg><use href="#icon-eye"/></svg></button>
-          </div>
-          <button class="btn btn-secondary btn-block" id="addStaffBtn">+ Add staff account</button>
-        </div>
       </div>
 
       <div class="settings-block">
         <h3 class="block-title">Account</h3>
         <div class="account-actions">
           <button class="btn btn-ghost btn-block" id="changePasswordBtn">Change password</button>
-          <button class="btn btn-ghost btn-block btn-danger-text" id="logoutBtn">Log out</button>
         </div>
       </div>
     </section>
@@ -367,6 +364,55 @@
       <button class="btn btn-ghost" id="cancelPasswordBtn">Cancel</button>
       <button class="btn btn-primary" id="savePasswordBtn">Update password</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ ADD STAFF MODAL ============ -->
+<div id="addStaffModal" class="modal hidden">
+  <div class="modal-card">
+    <h3>Add staff account</h3>
+    <label class="field">
+      <span>Staff member's name</span>
+      <input type="text" id="modalStaffName" />
+    </label>
+    <label class="field">
+      <span>Email (used to log in)</span>
+      <input type="email" id="modalStaffEmail" />
+    </label>
+    <label class="field">
+      <span>Temporary password</span>
+      <div class="pw-wrap">
+        <input type="password" id="modalStaffPassword" minlength="6" placeholder="Min 6 characters" />
+        <button type="button" class="pw-toggle" data-toggle-for="modalStaffPassword"><svg><use href="#icon-eye"/></svg></button>
+      </div>
+    </label>
+    <p class="auth-msg" id="addStaffMsg"></p>
+    <div class="modal-actions">
+      <div class="left-actions"></div>
+      <div class="right-actions">
+        <button class="btn btn-ghost" id="cancelAddStaffBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveAddStaffBtn">Add staff account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FULL-SCREEN SIGNING VIEW ============ -->
+<div id="signScreen" class="sign-screen hidden">
+  <div class="sign-screen-header">
+    <button type="button" class="icon-btn" id="signScreenBack" title="Back"><svg><use href="#icon-chevron-left"/></svg></button>
+    <div class="sign-screen-title-wrap">
+      <div class="sign-screen-title" id="signScreenTitle">Checked by</div>
+      <div class="sign-screen-sub" id="signScreenSub">Signing as you</div>
+    </div>
+  </div>
+  <div class="sign-screen-canvas-wrap">
+    <canvas id="signScreenCanvas" class="sign-screen-canvas"></canvas>
+  </div>
+  <p class="sign-screen-hint">Sign above with your finger, stylus, or mouse. Once saved, this signature can't be changed by anyone.</p>
+  <div class="sign-screen-actions">
+    <button type="button" class="btn btn-ghost" id="signScreenClear">Clear</button>
+    <button type="button" class="btn btn-primary btn-block" id="signScreenOk">OK — save signature</button>
   </div>
 </div>
 

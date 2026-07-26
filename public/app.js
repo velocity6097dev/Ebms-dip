@@ -80,13 +80,17 @@
   const addTankBtn = document.getElementById('addTankBtn');
 
   const staffManageList = document.getElementById('staffManageList');
-  const newStaffName = document.getElementById('newStaffName');
-  const newStaffEmail = document.getElementById('newStaffEmail');
-  const newStaffPassword = document.getElementById('newStaffPassword');
-  const addStaffBtn = document.getElementById('addStaffBtn');
+  const topbarAddStaffBtn = document.getElementById('topbarAddStaffBtn');
+  const topbarLogoutBtn = document.getElementById('topbarLogoutBtn');
+  const addStaffModal = document.getElementById('addStaffModal');
+  const modalStaffName = document.getElementById('modalStaffName');
+  const modalStaffEmail = document.getElementById('modalStaffEmail');
+  const modalStaffPassword = document.getElementById('modalStaffPassword');
+  const addStaffMsg = document.getElementById('addStaffMsg');
+  const cancelAddStaffBtn = document.getElementById('cancelAddStaffBtn');
+  const saveAddStaffBtn = document.getElementById('saveAddStaffBtn');
 
   const changePasswordBtn = document.getElementById('changePasswordBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
 
   const changePasswordModal = document.getElementById('changePasswordModal');
   const newPasswordInput = document.getElementById('newPassword');
@@ -119,6 +123,14 @@
   const entryModalBody = document.getElementById('entryModalBody');
   const entryModalActions = document.getElementById('entryModalActions');
 
+  const signScreen = document.getElementById('signScreen');
+  const signScreenBack = document.getElementById('signScreenBack');
+  const signScreenTitle = document.getElementById('signScreenTitle');
+  const signScreenSub = document.getElementById('signScreenSub');
+  const signScreenCanvas = document.getElementById('signScreenCanvas');
+  const signScreenClear = document.getElementById('signScreenClear');
+  const signScreenOk = document.getElementById('signScreenOk');
+
   const toastEl = document.getElementById('toast');
 
   // ---------------------------------------------------------------
@@ -141,7 +153,9 @@
 
   let entryModalKind = null;
   let entryModalRowId = null;
-  let entryModalSignaturePad = null;
+
+  let signScreenPad = null;
+  let signScreenKind = null;
 
   const genericPending = {};
   const genericTimers = {};
@@ -423,7 +437,7 @@
     showToast('Password updated');
   });
 
-  logoutBtn.addEventListener('click', async () => {
+  topbarLogoutBtn.addEventListener('click', async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
   });
@@ -837,19 +851,30 @@
     }
   });
 
-  addStaffBtn.addEventListener('click', async () => {
-    const name = newStaffName.value.trim();
-    const email = newStaffEmail.value.trim();
-    const password = newStaffPassword.value;
+  topbarAddStaffBtn.addEventListener('click', () => {
+    modalStaffName.value = '';
+    modalStaffEmail.value = '';
+    modalStaffPassword.value = '';
+    addStaffMsg.textContent = '';
+    addStaffModal.classList.remove('hidden');
+  });
+
+  cancelAddStaffBtn.addEventListener('click', () => addStaffModal.classList.add('hidden'));
+
+  saveAddStaffBtn.addEventListener('click', async () => {
+    const name = modalStaffName.value.trim();
+    const email = modalStaffEmail.value.trim();
+    const password = modalStaffPassword.value;
+    addStaffMsg.textContent = '';
     if (!name || !email || !password) {
-      showToast('Fill in name, email, and password.', true);
+      addStaffMsg.textContent = 'Fill in name, email, and password.';
       return;
     }
     if (password.length < 6) {
-      showToast('Password must be at least 6 characters.', true);
+      addStaffMsg.textContent = 'Password must be at least 6 characters.';
       return;
     }
-    addStaffBtn.disabled = true;
+    saveAddStaffBtn.disabled = true;
     try {
       const token = await getAccessToken();
       const res = await fetch('/api/create-staff', {
@@ -860,15 +885,13 @@
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to add staff account');
       staffList.push(json.staff);
-      newStaffName.value = '';
-      newStaffEmail.value = '';
-      newStaffPassword.value = '';
       renderStaffManageList();
+      addStaffModal.classList.add('hidden');
       showToast('Staff account created');
     } catch (err) {
-      showToast(err.message, true);
+      addStaffMsg.textContent = err.message;
     } finally {
-      addStaffBtn.disabled = false;
+      saveAddStaffBtn.disabled = false;
     }
   });
 
@@ -1116,24 +1139,43 @@
     return list.find((r) => r.id === id) || null;
   }
 
-  function buildSignSection(label, existingName, existingAt, existingSig) {
-    const already = existingSig
-      ? `<div class="signed-as-meta">Previously ${esc(label.toLowerCase())} by ${esc(existingName || '')} at ${esc(fmtTime(existingAt))}</div>`
-      : '';
+  function getSignMeta(kind) {
+    if (kind === 'contam') {
+      return { label: 'Verified by', name: 'verified_by_name', sig: 'verified_by_signature', at: 'verified_at', user: 'verified_by_user_id' };
+    }
+    return { label: 'Checked by', name: 'checked_by_name', sig: 'checked_by_signature', at: 'checked_by_at', user: 'checked_by_user_id' };
+  }
+
+  function buildSignSectionHTML(kind, row) {
+    const meta = getSignMeta(kind);
+    const existingSig = row ? row[meta.sig] : null;
+    const existingName = row ? row[meta.name] : null;
+    const existingAt = row ? row[meta.at] : null;
+    if (existingSig) {
+      return `
+        <div class="sign-section signed-locked">
+          <div class="sign-section-title">${esc(meta.label)}</div>
+          <div class="locked-sig-row">
+            <img src="${existingSig}" alt="signature" class="locked-sig-img" />
+            <div class="locked-sig-meta">
+              <span class="locked-sig-name">${esc(existingName || '')}</span>
+              <span class="locked-sig-time">${esc(fmtTime(existingAt))}</span>
+            </div>
+          </div>
+          <div class="locked-note">🔒 Signed — cannot be changed by anyone.</div>
+        </div>`;
+    }
     return `
       <div class="sign-section">
-        <div class="sign-section-title">${esc(label)}</div>
-        <div class="signed-as-row">
-          <div class="signed-as-avatar">${esc(initials(displayName).toUpperCase())}</div>
-          <div class="signed-as-text">
-            <span class="signed-as-name">${esc(displayName)}</span>
-            <span class="signed-as-meta">${already ? 'Sign again to update' : "Signing now — time is captured automatically"}</span>
-          </div>
-        </div>
-        ${already}
-        <div class="sig-wrap"><canvas class="sig-canvas" id="ef_sigCanvas"></canvas></div>
-        <div class="sig-actions"><button type="button" class="link-btn" id="ef_clearSig">Clear signature</button></div>
+        <div class="sign-section-title">${esc(meta.label)}</div>
+        <p class="block-sub">Not yet ${esc(meta.label.toLowerCase())}. Signing saves immediately and can't be undone — other fields still need the Save button.</p>
+        <button type="button" class="btn btn-secondary btn-block sign-open-btn">Sign</button>
       </div>`;
+  }
+
+  function wireSignButton(kind) {
+    const btn = entryModalBody.querySelector('.sign-open-btn');
+    if (btn) btn.addEventListener('click', () => openSignScreen(kind));
   }
 
   function buildMonsoonForm(row) {
@@ -1176,14 +1218,21 @@
       <label class="field"><span>Date</span><input type="date" id="ef_date" value="${dateVal}" /></label>
       ${tankBlocks}
       <label class="field"><span>Remarks</span><input type="text" id="ef_remarks" value="${esc(remarksVal)}" placeholder="Optional" /></label>
-      ${buildSignSection('Checked by', row ? row.checked_by_name : null, row ? row.checked_by_at : null, row ? row.checked_by_signature : null)}
+      ${buildSignSectionHTML('monsoon', row)}
     `;
   }
 
   function buildRainyForm(row) {
+    const lockDateTime = role === 'staff';
     const dateVal = row ? row.entry_date : todayISO();
-    const hourVal = row ? row.hour_time || '' : '';
+    const hourVal = row ? row.hour_time || '' : fmtTime(new Date().toISOString());
     const remarksVal = row ? row.remarks || '' : '';
+    const dateFieldHTML = lockDateTime
+      ? `<input type="date" id="ef_date" value="${dateVal}" readonly />`
+      : `<input type="date" id="ef_date" value="${dateVal}" />`;
+    const hourFieldHTML = lockDateTime
+      ? `<input type="text" id="ef_hour" value="${esc(hourVal)}" readonly />`
+      : `<input type="text" id="ef_hour" value="${esc(hourVal)}" placeholder="e.g. 08:00 AM" />`;
     const tankBlocks = tanks.length
       ? tanks
           .map((t) => {
@@ -1205,11 +1254,11 @@
 
     return `
       <h3 class="entry-modal-title">${row ? 'Edit reading' : 'New reading'}</h3>
-      <label class="field"><span>Date</span><input type="date" id="ef_date" value="${dateVal}" /></label>
-      <label class="field"><span>Hour / time</span><input type="text" id="ef_hour" value="${esc(hourVal)}" placeholder="e.g. 08:00 AM" /></label>
+      <label class="field"><span>Date ${lockDateTime ? '<span class="lock-hint">(auto — captured now)</span>' : ''}</span>${dateFieldHTML}</label>
+      <label class="field"><span>Hour / time ${lockDateTime ? '<span class="lock-hint">(auto — captured now)</span>' : ''}</span>${hourFieldHTML}</label>
       ${tankBlocks}
       <label class="field"><span>Remarks</span><input type="text" id="ef_remarks" value="${esc(remarksVal)}" placeholder="Optional" /></label>
-      ${buildSignSection('Checked by', row ? row.checked_by_name : null, row ? row.checked_by_at : null, row ? row.checked_by_signature : null)}
+      ${buildSignSectionHTML('rainy', row)}
     `;
   }
 
@@ -1244,7 +1293,7 @@
       <label class="field"><span>Reported to (name &amp; designation)</span><input type="text" id="cf_reported" value="${esc(row ? row.reported_to : '')}" /></label>
       <label class="field"><span>Corrective action taken</span><textarea id="cf_corrective">${esc(row ? row.corrective_action : '')}</textarea></label>
       <label class="field"><span>Remarks</span><input type="text" id="cf_remarks" value="${esc(row ? row.remarks : '')}" /></label>
-      ${buildSignSection('Verified by', row ? row.verified_by_name : null, row ? row.verified_at : null, row ? row.verified_by_signature : null)}
+      ${buildSignSectionHTML('contam', row)}
     `;
   }
 
@@ -1334,42 +1383,106 @@
     entryModalActions.innerHTML = buildEntryActionsHTML(rowId);
 
     wireAppearanceButtons();
+    wireSignButton(kind);
     if (kind === 'contam') wireContamPickers();
 
     document.getElementById('ef_cancel').addEventListener('click', closeEntryModal);
-    if (rowId) document.getElementById('ef_delete').addEventListener('click', () => handleEntryDelete(kind, rowId));
-    document.getElementById('ef_save').addEventListener('click', () => handleEntrySave(kind, rowId));
+    if (rowId) document.getElementById('ef_delete').addEventListener('click', () => handleEntryDelete(kind, entryModalRowId));
+    document.getElementById('ef_save').addEventListener('click', () => handleEntrySave(kind, entryModalRowId));
 
     entryModal.classList.remove('hidden');
-
-    const canvas = document.getElementById('ef_sigCanvas');
-    entryModalSignaturePad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,1)', penColor: '#0B3556' });
-    requestAnimationFrame(() => resizeSigCanvas(canvas));
-    document.getElementById('ef_clearSig').addEventListener('click', () => entryModalSignaturePad.clear());
   }
 
   function closeEntryModal() {
     entryModal.classList.add('hidden');
     entryModalKind = null;
     entryModalRowId = null;
-    entryModalSignaturePad = null;
   }
 
   window.addEventListener('resize', () => {
-    if (!entryModal.classList.contains('hidden')) {
-      const canvas = document.getElementById('ef_sigCanvas');
-      if (canvas) resizeSigCanvas(canvas);
+    if (!signScreen.classList.contains('hidden')) {
+      resizeSigCanvas(signScreenCanvas);
     }
   });
 
-  function applySignatureToPayload(payload, nameField, sigField, atField, userField) {
-    if (entryModalSignaturePad && !entryModalSignaturePad.isEmpty()) {
-      payload[sigField] = entryModalSignaturePad.toDataURL('image/png');
-      payload[nameField] = displayName;
-      payload[atField] = new Date().toISOString();
-      payload[userField] = currentUser.id;
-    }
+  function openSignScreen(kind) {
+    signScreenKind = kind;
+    const meta = getSignMeta(kind);
+    signScreenTitle.textContent = meta.label;
+    signScreenSub.textContent = `Signing as ${displayName}`;
+    signScreen.classList.remove('hidden');
+    signScreenPad = new SignaturePad(signScreenCanvas, { backgroundColor: 'rgba(255,255,255,1)', penColor: '#0B3556' });
+    requestAnimationFrame(() => resizeSigCanvas(signScreenCanvas));
   }
+
+  function closeSignScreen() {
+    signScreen.classList.add('hidden');
+    signScreenPad = null;
+    signScreenKind = null;
+  }
+
+  signScreenBack.addEventListener('click', closeSignScreen);
+  signScreenClear.addEventListener('click', () => signScreenPad && signScreenPad.clear());
+
+  signScreenOk.addEventListener('click', async () => {
+    if (!signScreenPad || signScreenPad.isEmpty()) {
+      showToast('Please sign before saving.', true);
+      return;
+    }
+    signScreenOk.disabled = true;
+    const kind = signScreenKind;
+    const meta = getSignMeta(kind);
+    const table = kind === 'monsoon' ? 'monsoon_entries' : kind === 'rainy' ? 'rainy_entries' : 'contamination_log';
+    const rowsArray = kind === 'monsoon' ? monsoonRows : kind === 'rainy' ? rainyRows : contamRows;
+    const dataUrl = signScreenPad.toDataURL('image/png');
+    const nowIso = new Date().toISOString();
+    const sigPayload = {
+      [meta.sig]: dataUrl,
+      [meta.name]: displayName,
+      [meta.at]: nowIso,
+      [meta.user]: currentUser.id,
+    };
+
+    let ok;
+    const isNewRow = !entryModalRowId;
+    if (entryModalRowId) {
+      // Existing entry: commit the signature immediately, standalone from the rest of the form.
+      ok = await upsertRow(table, entryModalRowId, sigPayload, rowsArray, rowsArray.length);
+    } else {
+      // Brand-new entry: create the row now (signature + whatever fields are filled so far).
+      const basePayload = gatherFormPayload(kind);
+      ok = await upsertRow(table, null, { ...basePayload, ...sigPayload }, rowsArray, rowsArray.length);
+      if (ok) entryModalRowId = rowsArray[rowsArray.length - 1].id;
+    }
+    signScreenOk.disabled = false;
+    if (!ok) return;
+
+    if (kind === 'monsoon') renderMonsoonTable();
+    else if (kind === 'rainy') renderRainyTable();
+    else renderContamTable();
+
+    // Refresh just the sign-section inside the still-open entry modal, leaving any
+    // other in-progress, unsaved field edits untouched.
+    const row = findRow(kind, entryModalRowId);
+    const oldSection = entryModalBody.querySelector('.sign-section');
+    if (oldSection) {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = buildSignSectionHTML(kind, row);
+      oldSection.replaceWith(wrap.firstElementChild);
+    }
+
+    // If this was a brand-new entry, it now has a real id — rebuild the modal
+    // footer so a Delete button appears and Save/Delete bind to that real id.
+    if (isNewRow && entryModalRowId) {
+      entryModalActions.innerHTML = buildEntryActionsHTML(entryModalRowId);
+      document.getElementById('ef_cancel').addEventListener('click', closeEntryModal);
+      document.getElementById('ef_delete').addEventListener('click', () => handleEntryDelete(kind, entryModalRowId));
+      document.getElementById('ef_save').addEventListener('click', () => handleEntrySave(kind, entryModalRowId));
+    }
+
+    closeSignScreen();
+    showToast('Signed at ' + fmtTime(nowIso));
+  });
 
   async function upsertRow(table, rowId, payload, rowsArray, rowOrderBase) {
     if (rowId) {
@@ -1395,68 +1508,68 @@
     return true;
   }
 
+  function gatherFormPayload(kind) {
+    if (kind === 'monsoon') {
+      const readings = {};
+      entryModalBody.querySelectorAll('.tank-section').forEach((sec) => {
+        const tid = sec.dataset.tankId;
+        readings[tid] = {
+          morning_dip: sec.querySelector('input[data-slot="morning"]').value.trim(),
+          morning_appearance: sec.querySelector('.appearance-field[data-slot="morning"]').dataset.val || '',
+          evening_dip: sec.querySelector('input[data-slot="evening"]').value.trim(),
+          evening_appearance: sec.querySelector('.appearance-field[data-slot="evening"]').dataset.val || '',
+        };
+      });
+      return {
+        entry_date: document.getElementById('ef_date').value,
+        remarks: document.getElementById('ef_remarks').value.trim(),
+        readings,
+      };
+    }
+    if (kind === 'rainy') {
+      const readings = {};
+      entryModalBody.querySelectorAll('.tank-section').forEach((sec) => {
+        const tid = sec.dataset.tankId;
+        readings[tid] = {
+          dip: sec.querySelector('input[data-slot="single"]').value.trim(),
+          appearance: sec.querySelector('.appearance-field[data-slot="single"]').dataset.val || '',
+        };
+      });
+      return {
+        entry_date: document.getElementById('ef_date').value,
+        hour_time: document.getElementById('ef_hour').value.trim(),
+        remarks: document.getElementById('ef_remarks').value.trim(),
+        readings,
+      };
+    }
+    // contam
+    const qtyRaw = document.getElementById('cf_qty').value;
+    return {
+      entry_date: document.getElementById('cf_date').value,
+      tank_id: document.getElementById('cf_tank_btn').dataset.val || null,
+      water_found_mm: document.getElementById('cf_water').value.trim(),
+      appearance: document.getElementById('cf_appearance_btn').dataset.val || '',
+      contamination_confirmed: document.getElementById('cf_confirmed_btn').dataset.val || '',
+      immediate_action: document.getElementById('cf_immediate').value.trim(),
+      qty_decanted_litres: qtyRaw ? Number(qtyRaw) : null,
+      reported_to: document.getElementById('cf_reported').value.trim(),
+      corrective_action: document.getElementById('cf_corrective').value.trim(),
+      remarks: document.getElementById('cf_remarks').value.trim(),
+    };
+  }
+
   async function handleEntrySave(kind, rowId) {
     const saveBtn = document.getElementById('ef_save');
     saveBtn.disabled = true;
     try {
-      if (kind === 'monsoon') {
-        const readings = {};
-        entryModalBody.querySelectorAll('.tank-section').forEach((sec) => {
-          const tid = sec.dataset.tankId;
-          readings[tid] = {
-            morning_dip: sec.querySelector('input[data-slot="morning"]').value.trim(),
-            morning_appearance: sec.querySelector('.appearance-field[data-slot="morning"]').dataset.val || '',
-            evening_dip: sec.querySelector('input[data-slot="evening"]').value.trim(),
-            evening_appearance: sec.querySelector('.appearance-field[data-slot="evening"]').dataset.val || '',
-          };
-        });
-        const payload = {
-          entry_date: document.getElementById('ef_date').value,
-          remarks: document.getElementById('ef_remarks').value.trim(),
-          readings,
-        };
-        applySignatureToPayload(payload, 'checked_by_name', 'checked_by_signature', 'checked_by_at', 'checked_by_user_id');
-        const ok = await upsertRow('monsoon_entries', rowId, payload, monsoonRows, monsoonRows.length);
-        if (!ok) return;
-        renderMonsoonTable();
-      } else if (kind === 'rainy') {
-        const readings = {};
-        entryModalBody.querySelectorAll('.tank-section').forEach((sec) => {
-          const tid = sec.dataset.tankId;
-          readings[tid] = {
-            dip: sec.querySelector('input[data-slot="single"]').value.trim(),
-            appearance: sec.querySelector('.appearance-field[data-slot="single"]').dataset.val || '',
-          };
-        });
-        const payload = {
-          entry_date: document.getElementById('ef_date').value,
-          hour_time: document.getElementById('ef_hour').value.trim(),
-          remarks: document.getElementById('ef_remarks').value.trim(),
-          readings,
-        };
-        applySignatureToPayload(payload, 'checked_by_name', 'checked_by_signature', 'checked_by_at', 'checked_by_user_id');
-        const ok = await upsertRow('rainy_entries', rowId, payload, rainyRows, rainyRows.length);
-        if (!ok) return;
-        renderRainyTable();
-      } else {
-        const qtyRaw = document.getElementById('cf_qty').value;
-        const payload = {
-          entry_date: document.getElementById('cf_date').value,
-          tank_id: document.getElementById('cf_tank_btn').dataset.val || null,
-          water_found_mm: document.getElementById('cf_water').value.trim(),
-          appearance: document.getElementById('cf_appearance_btn').dataset.val || '',
-          contamination_confirmed: document.getElementById('cf_confirmed_btn').dataset.val || '',
-          immediate_action: document.getElementById('cf_immediate').value.trim(),
-          qty_decanted_litres: qtyRaw ? Number(qtyRaw) : null,
-          reported_to: document.getElementById('cf_reported').value.trim(),
-          corrective_action: document.getElementById('cf_corrective').value.trim(),
-          remarks: document.getElementById('cf_remarks').value.trim(),
-        };
-        applySignatureToPayload(payload, 'verified_by_name', 'verified_by_signature', 'verified_at', 'verified_by_user_id');
-        const ok = await upsertRow('contamination_log', rowId, payload, contamRows, contamRows.length);
-        if (!ok) return;
-        renderContamTable();
-      }
+      const table = kind === 'monsoon' ? 'monsoon_entries' : kind === 'rainy' ? 'rainy_entries' : 'contamination_log';
+      const rowsArray = kind === 'monsoon' ? monsoonRows : kind === 'rainy' ? rainyRows : contamRows;
+      const payload = gatherFormPayload(kind);
+      const ok = await upsertRow(table, rowId, payload, rowsArray, rowsArray.length);
+      if (!ok) return;
+      if (kind === 'monsoon') renderMonsoonTable();
+      else if (kind === 'rainy') renderRainyTable();
+      else renderContamTable();
       closeEntryModal();
       showToast('Saved');
     } finally {

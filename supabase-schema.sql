@@ -217,3 +217,32 @@ create index if not exists contamination_log_user_date_idx on contamination_log 
 create index if not exists tanks_user_idx on tanks (user_id, sort_order);
 create index if not exists outlet_staff_owner_idx on outlet_staff (owner_user_id);
 create index if not exists outlet_staff_staff_idx on outlet_staff (staff_user_id);
+
+-- ---------------------------------------------------------
+-- 7. Fix: deleting a staff login was failing.
+--    Postgres was blocking auth.users deletion because other
+--    tables referenced that id with no ON DELETE behaviour
+--    (the default is "restrict"). This makes the link table
+--    cascade (it's meaningless once the login is gone) and
+--    makes past signed entries keep their name/signature/time
+--    but just drop the dangling user-id link.
+-- ---------------------------------------------------------
+alter table outlet_staff drop constraint if exists outlet_staff_staff_user_id_fkey;
+alter table outlet_staff add constraint outlet_staff_staff_user_id_fkey
+  foreign key (staff_user_id) references auth.users(id) on delete cascade;
+
+alter table outlet_staff drop constraint if exists outlet_staff_owner_user_id_fkey;
+alter table outlet_staff add constraint outlet_staff_owner_user_id_fkey
+  foreign key (owner_user_id) references auth.users(id) on delete cascade;
+
+alter table monsoon_entries drop constraint if exists monsoon_entries_checked_by_user_id_fkey;
+alter table monsoon_entries add constraint monsoon_entries_checked_by_user_id_fkey
+  foreign key (checked_by_user_id) references auth.users(id) on delete set null;
+
+alter table rainy_entries drop constraint if exists rainy_entries_checked_by_user_id_fkey;
+alter table rainy_entries add constraint rainy_entries_checked_by_user_id_fkey
+  foreign key (checked_by_user_id) references auth.users(id) on delete set null;
+
+alter table contamination_log drop constraint if exists contamination_log_verified_by_user_id_fkey;
+alter table contamination_log add constraint contamination_log_verified_by_user_id_fkey
+  foreign key (verified_by_user_id) references auth.users(id) on delete set null;

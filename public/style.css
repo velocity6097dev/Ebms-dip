@@ -101,6 +101,8 @@ svg { display: block; }
 }
 .field textarea { resize: vertical; min-height: 56px; }
 .field input:focus, .field textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
+.field input[readonly] { background: var(--bg); color: var(--ink-soft); cursor: not-allowed; }
+.lock-hint { font-weight: 500; color: var(--ink-soft); text-transform: none; letter-spacing: normal; font-size: 11px; }
 
 /* Password field with a show/hide eye button */
 .pw-wrap { position: relative; }
@@ -191,10 +193,18 @@ svg { display: block; }
 }
 .topbar-text strong { display: block; font-family: var(--font-display); font-size: 16px; }
 .topbar-sub { font-size: 12px; color: #C9D6E0; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .role-badge {
   font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
-  background: rgba(255,255,255,0.14); color: #fff; white-space: nowrap; flex-shrink: 0;
+  background: rgba(255,255,255,0.14); color: #fff; white-space: nowrap;
 }
+.topbar-icon-btn {
+  border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.08); color: #fff;
+  width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.topbar-icon-btn:hover { background: rgba(255,255,255,0.18); }
+.topbar-icon-btn svg { width: 17px; height: 17px; }
 
 .app-main {
   flex: 1;
@@ -244,12 +254,6 @@ svg { display: block; }
   border: 1px solid var(--line); border-radius: var(--radius);
 }
 .add-inline-row input:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
-
-.stacked-add-form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.stacked-add-form input {
-  font-size: 13.5px; padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius);
-}
-.stacked-add-form input:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
 
 /* ---------------- Bottom navigation ---------------- */
 .bottom-nav {
@@ -362,18 +366,37 @@ table.excel-table tbody tr.row-empty { color: var(--ink-soft); font-style: itali
   border: 1px solid var(--line-soft); border-radius: 10px; padding: 12px; background: var(--bg);
 }
 .sign-section-title { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
-.signed-as-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.signed-as-avatar {
-  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-  background: var(--navy); color: #fff; font-family: var(--font-display); font-weight: 600;
-  display: flex; align-items: center; justify-content: center; font-size: 13px;
+.sign-section .block-sub { margin-bottom: 10px; }
+
+.sign-section.signed-locked { background: var(--green-bg); border-color: #BFDFCC; }
+.locked-sig-row { display: flex; align-items: center; gap: 12px; }
+.locked-sig-img { height: 40px; max-width: 110px; object-fit: contain; background: #fff; border: 1px solid var(--line-soft); border-radius: 6px; padding: 2px; }
+.locked-sig-meta { display: flex; flex-direction: column; }
+.locked-sig-name { font-size: 14px; font-weight: 600; color: var(--navy); }
+.locked-sig-time { font-size: 11.5px; color: var(--ink-soft); }
+.locked-note { font-size: 11px; color: var(--green); font-weight: 600; margin-top: 8px; }
+
+/* ---------------- Full-screen signing view ---------------- */
+.sign-screen {
+  position: fixed; inset: 0; background: var(--paper); z-index: 100;
+  display: flex; flex-direction: column;
+  padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
 }
-.signed-as-text { display: flex; flex-direction: column; }
-.signed-as-name { font-size: 14px; font-weight: 600; color: var(--ink); }
-.signed-as-meta { font-size: 11px; color: var(--ink-soft); }
-.sig-wrap { border: 1.5px dashed var(--line); border-radius: 8px; background: #FCFCFB; overflow: hidden; }
-.sig-canvas { width: 100%; height: 130px; touch-action: none; display: block; }
-.sig-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+.sign-screen-header {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  border-bottom: 1px solid var(--line-soft); flex-shrink: 0;
+}
+.sign-screen-title-wrap { flex: 1; min-width: 0; }
+.sign-screen-title { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--navy); }
+.sign-screen-sub { font-size: 12px; color: var(--ink-soft); }
+.sign-screen-canvas-wrap {
+  flex: 1; margin: 16px; border: 2px dashed var(--line); border-radius: 12px;
+  background: #FCFCFB; overflow: hidden; min-height: 200px;
+}
+.sign-screen-canvas { width: 100%; height: 100%; touch-action: none; display: block; }
+.sign-screen-hint { text-align: center; font-size: 12px; color: var(--ink-soft); margin: 0 20px 12px; }
+.sign-screen-actions { display: flex; gap: 10px; padding: 14px 16px calc(16px + var(--safe-bottom)); flex-shrink: 0; }
+.sign-screen-actions .btn-primary { flex: 1; }
 
 .modal-actions { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 14px 20px; border-top: 1px solid var(--line-soft); background: var(--paper); }
 .modal-actions .right-actions { display: flex; gap: 8px; margin-left: auto; }
@@ -447,7 +470,7 @@ table.excel-table tbody tr.row-empty { color: var(--ink-soft); font-style: itali
 @media print {
   body { background: #fff; }
   .app-topbar, .bottom-nav, .fab, .toolbar-actions,
-  #toast, #entryModal, #changePasswordModal { display: none !important; }
+  #toast, #entryModal, #changePasswordModal, #addStaffModal, #signScreen { display: none !important; }
 
   .screen.hidden { display: none !important; }
   .screen { padding: 0; margin: 0; }
